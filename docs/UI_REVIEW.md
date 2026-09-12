@@ -10,7 +10,7 @@ Reviewed the Applications catalog, Help, Notes, Canvas, Tasks, Settings, and fir
 - Canvas uses **Empty canvas**, a drawing instruction, and **Insert example diagram**. Its example labels are Input and Output.
 - Updated the existing diagnostics browser-test heading selector to match **Diagnostics**. No behavior was changed.
 
-## Recommendations for files owned by the parent task
+## Follow-through
 
 | Surface                    | Current copy                                         | Recommended copy                                                                                                  |
 | -------------------------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
@@ -27,7 +27,7 @@ Reviewed the Applications catalog, Help, Notes, Canvas, Tasks, Settings, and fir
 | Welcome footer             | “Local files. Your workspace.”                       | Remove; the body already explains file storage                                                                    |
 | Routine launch toast       | “opened apps”, “opened canvas”                       | Suppress successful launch notifications; reserve transient messages for failures and important completion states |
 
-The launch toast currently covers application controls at the upper right. Both screenshot sets show this; changing toast policy belongs to the desktop task.
+The parent task applied the Settings and Tasks simplifications, removed routine successful-launch toasts, and rewrote onboarding with touch-specific controls. The table records the original review recommendations; current source contains the subsequent changes.
 
 ## Visual evidence
 

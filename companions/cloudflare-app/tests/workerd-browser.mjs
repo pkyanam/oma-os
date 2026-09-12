@@ -11,7 +11,7 @@ const browserPath = fileURLToPath(
 );
 const output = await build({
   stdin: {
-    contents: `import {BrowserSession,routeCloudBrowser,closeCloudBrowser} from ${JSON.stringify(browserPath)};export {BrowserSession};export default {async fetch(request,env){const id=request.headers.get('x-fixture-identity')||undefined;if(new URL(request.url).pathname==='/fixture-logout'){await closeCloudBrowser(env,id);return new Response('closed');}return routeCloudBrowser(request,env,id)}}`,
+    contents: `import {BrowserSession,routeCloudBrowser,closeCloudBrowser} from ${JSON.stringify(browserPath)};export {BrowserSession};export default {async fetch(request,env){env=request.headers.has('x-fixture-unbound')?{}:{...env,BROWSER:{}};const id=request.headers.get('x-fixture-identity')||undefined;if(new URL(request.url).pathname==='/fixture-logout'){await closeCloudBrowser(env,id);return new Response('closed');}return routeCloudBrowser(request,env,id)}}`,
     resolveDir: fileURLToPath(new URL("../../../", import.meta.url)),
     loader: "ts",
   },
@@ -49,6 +49,31 @@ const mf = new Miniflare(
   }),
 );
 try {
+  const unavailable = await mf.dispatchFetch(
+    "https://oma.test/api/browser-runtime?capabilities=1",
+    { headers: { "x-fixture-unbound": "1" } },
+  );
+  const capability = await unavailable.json();
+  assert.equal(capability.available, false);
+  assert.equal(capability.requiresAuthentication, false);
+  assert.equal(capability.transport, undefined);
+  assert.equal(
+    (
+      await mf.dispatchFetch("https://oma.test/api/browser-runtime", {
+        method: "POST",
+        headers: { "x-fixture-unbound": "1" },
+      })
+    ).status,
+    503,
+  );
+  assert.equal(
+    (
+      await mf.dispatchFetch("https://oma.test/fixture-logout", {
+        headers: { "x-fixture-unbound": "1", "x-fixture-identity": "alice" },
+      })
+    ).status,
+    200,
+  );
   const post = (identity, body, extra = {}) =>
     mf.dispatchFetch("https://oma.test/api/browser-runtime", {
       method: "POST",

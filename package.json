@@ -19,7 +19,8 @@
     "predev:cloudflare": "npm run setup:auth",
     "test:auth:cloudflare": "node companions/cloudflare-app/tests/workerd-auth.mjs && node companions/cloudflare-app/tests/workerd-browser.mjs",
     "typecheck:cloudflare": "tsc -p cloudflare/tsconfig.json --noEmit",
-    "test:e2e:cloudflare": "OMA_TEST_RUNTIME=cloudflare playwright test"
+    "test:e2e:cloudflare": "OMA_TEST_RUNTIME=cloudflare playwright test",
+    "test:offline": "node scripts/test-offline.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.66",

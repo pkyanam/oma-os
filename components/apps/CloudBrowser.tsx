@@ -71,7 +71,7 @@ function startSession(
   return result;
 }
 export default forwardRef<RemoteBrowserHandle, Props>(function CloudBrowser(
-  { url, active, onLocation },
+  { url, onLocation },
   ref,
 ) {
   const host = useRef<HTMLDivElement>(null),
@@ -86,6 +86,26 @@ export default forwardRef<RemoteBrowserHandle, Props>(function CloudBrowser(
     [epoch, setEpoch] = useState(0),
     [stopped, setStopped] = useState(false),
     [remaining, setRemaining] = useState("");
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const element = host.current;
+    if (!element) return;
+    let intersects = false;
+    const updateVisibility = () => setVisible(intersects && !document.hidden);
+    const observer = new IntersectionObserver(([entry]) => {
+      intersects =
+        entry.isIntersecting &&
+        entry.intersectionRect.width > 0 &&
+        entry.intersectionRect.height > 0;
+      updateVisibility();
+    });
+    observer.observe(element);
+    document.addEventListener("visibilitychange", updateVisibility);
+    return () => {
+      observer.disconnect();
+      document.removeEventListener("visibilitychange", updateVisibility);
+    };
+  }, []);
   callback.current = onLocation;
   const update = (value: CloudSession) => {
     current.current = value;
@@ -186,7 +206,7 @@ export default forwardRef<RemoteBrowserHandle, Props>(function CloudBrowser(
     }
   }, [url, session?.sessionId]);
   useEffect(() => {
-    if (!session || !active) return;
+    if (!session || !visible) return;
     let cancelled = false;
     let timer = 0;
     const heartbeat = async () => {
@@ -213,20 +233,21 @@ export default forwardRef<RemoteBrowserHandle, Props>(function CloudBrowser(
       }
       if (!cancelled) timer = window.setTimeout(heartbeat, 30000);
     };
-    timer = window.setTimeout(heartbeat, 30000);
-    const visible = () => {
+    // Refresh immediately when a page becomes visible again, before its idle lease expires.
+    void heartbeat();
+    const onDocumentVisible = () => {
       if (!document.hidden) {
         clearTimeout(timer);
         void heartbeat();
       }
     };
-    document.addEventListener("visibilitychange", visible);
+    document.addEventListener("visibilitychange", onDocumentVisible);
     return () => {
       cancelled = true;
       clearTimeout(timer);
-      document.removeEventListener("visibilitychange", visible);
+      document.removeEventListener("visibilitychange", onDocumentVisible);
     };
-  }, [session?.sessionId, active]);
+  }, [session?.sessionId, visible]);
   useEffect(() => {
     if (!session) return;
     const tick = () => {
@@ -249,7 +270,7 @@ export default forwardRef<RemoteBrowserHandle, Props>(function CloudBrowser(
     return () => clearInterval(timer);
   }, [session?.sessionId]);
   useEffect(() => {
-    if (!session || !host.current || !active) return;
+    if (!session || !host.current || !visible) return;
     let timer = 0;
     const observer = new ResizeObserver(([entry]) => {
       if (entry.contentRect.width < 1 || entry.contentRect.height < 1) return;
@@ -268,9 +289,9 @@ export default forwardRef<RemoteBrowserHandle, Props>(function CloudBrowser(
       clearTimeout(timer);
       observer.disconnect();
     };
-  }, [session?.sessionId, active]);
+  }, [session?.sessionId, visible]);
   return (
-    <div className="cloud-browser" ref={host}>
+    <div className="cloud-browser" ref={host} data-visible={visible}>
       {session ? (
         <>
           <iframe

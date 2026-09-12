@@ -96,3 +96,78 @@ test("open sends files to their app and URLs to the internal browser", async () 
   );
   assert.deepEqual(calls[1], ["launch", "browser", "https://example.com/"]);
 });
+
+test("worker construction failure settles and a later attempt can retry", async () => {
+  const prior = globalThis.Worker;
+  try {
+    globalThis.Worker = class {
+      constructor() {
+        throw new Error("blocked");
+      }
+    } as unknown as typeof Worker;
+    const session = createShellSession(fixture().ctx);
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const result = await session.execute("echo hello");
+      assert.equal(result.exitCode, 1);
+      assert.match(result.stderr, /could not start/);
+    }
+    session.dispose();
+  } finally {
+    globalThis.Worker = prior;
+  }
+});
+
+test("worker transport failures and cancellation settle all pending work and allow replacement", async () => {
+  const prior = globalThis.Worker;
+  const workers: FakeWorker[] = [];
+  class FakeWorker {
+    onmessage: ((event: { data: unknown }) => void) | null = null;
+    onerror: (() => void) | null = null;
+    onmessageerror: (() => void) | null = null;
+    terminated = false;
+    failSend = false;
+    constructor() {
+      workers.push(this);
+    }
+    postMessage() {
+      if (this.failSend) throw new Error("disconnected");
+    }
+    terminate() {
+      this.terminated = true;
+    }
+  }
+  try {
+    globalThis.Worker = FakeWorker as unknown as typeof Worker;
+    const session = createShellSession(fixture().ctx);
+    const first = session.execute("echo first");
+    workers[0].onmessageerror?.();
+    assert.equal((await first).exitCode, 1);
+    assert.equal(workers[0].terminated, true);
+    const second = session.execute("echo second");
+    // An error queued by the previous worker must not kill the replacement.
+    workers[0].onerror?.();
+    assert.equal(workers[1].terminated, false);
+    session.cancel();
+    assert.equal((await second).exitCode, 130);
+    const third = session.execute("echo third");
+    workers[2].onmessage?.({
+      data: {
+        type: "result",
+        result: {
+          stdout: "third",
+          stderr: "",
+          exitCode: 0,
+          cwd: "/home/guest",
+        },
+      },
+    });
+    assert.equal((await third).stdout, "third");
+    workers[2].failSend = true;
+    assert.equal((await session.execute("echo disconnected")).exitCode, 1);
+    const fourth = session.execute("echo disposed");
+    session.dispose();
+    assert.equal((await fourth).exitCode, 130);
+  } finally {
+    globalThis.Worker = prior;
+  }
+});

@@ -100,9 +100,19 @@ export function createShellSession(ctx: BusContext) {
           cwd,
         });
       if (!worker) {
-        worker = new Worker(new URL("./shell.worker.ts", import.meta.url), {
-          type: "module",
-        });
+        try {
+          worker = new Worker(new URL("./shell.worker.ts", import.meta.url), {
+            type: "module",
+          });
+        } catch {
+          return Promise.resolve({
+            stdout: "",
+            stderr:
+              "Shell worker could not start. Retry or reload the desktop.\n",
+            exitCode: 1,
+            cwd,
+          });
+        }
         const current = worker;
         current.onmessage = (event) => {
           if (worker !== current) return;
@@ -116,11 +126,15 @@ export function createShellSession(ctx: BusContext) {
               message.stdin,
             ).then((result) => {
               if (worker === current)
-                current.postMessage({
-                  type: "desktop-result",
-                  callId: message.callId,
-                  result,
-                });
+                try {
+                  current.postMessage({
+                    type: "desktop-result",
+                    callId: message.callId,
+                    result,
+                  });
+                } catch {
+                  stop("Shell worker disconnected. Retry the command.\n", 1);
+                }
             });
           } else if (message.type === "result" && pending) {
             clearTimeout(pending.timer);
@@ -130,11 +144,20 @@ export function createShellSession(ctx: BusContext) {
             pending = null;
           }
         };
-        current.onerror = () =>
+        current.onmessageerror = () => {
+          if (worker === current)
+            stop(
+              "Shell worker response could not be read. Retry the command.\n",
+              1,
+            );
+        };
+        current.onerror = () => {
+          if (worker !== current) return;
           stop(
             "Shell worker failed to load. Reload the desktop and retry.\n",
             1,
           );
+        };
       }
       return new Promise((resolve) => {
         pending = {
@@ -148,7 +171,14 @@ export function createShellSession(ctx: BusContext) {
             20_000,
           ),
         };
-        worker!.postMessage({ type: "execute", script });
+        try {
+          worker!.postMessage({ type: "execute", script });
+        } catch {
+          stop(
+            "Shell worker could not receive the command. Retry the command.\n",
+            1,
+          );
+        }
       });
     },
   };

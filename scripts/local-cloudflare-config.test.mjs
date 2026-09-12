@@ -17,3 +17,13 @@ test("development removes remote AI unless explicitly opted in, retaining local 
   disableUnrequestedRemoteAI(opted, "1");
   assert.deepEqual(opted, { ai: { binding: "AI" } });
 });
+test("local managed browser is absent by default and remote only with its own opt-in", () => {
+  const defaults = { ai: { binding: "AI" }, browser: { binding: "BROWSER" } };
+  disableUnrequestedRemoteAI(defaults, "1");
+  assert.equal("browser" in defaults, false);
+  assert.ok(defaults.ai);
+  const browser = { ai: { binding: "AI" }, browser: { binding: "BROWSER" } };
+  disableUnrequestedRemoteAI(browser, undefined, "1");
+  assert.equal("ai" in browser, false);
+  assert.equal(browser.browser.remote, true);
+});

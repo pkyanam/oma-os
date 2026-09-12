@@ -220,3 +220,5 @@ See [extended agent context](docs/AGENT_CONTEXT.md) for operation and extension 
 ## License
 
 [MIT](LICENSE) for oma.os code. Dependencies retain their licenses; see [third-party notices](THIRD_PARTY_NOTICES.md). Built on open-source projects including Vite, Cloudflare tooling, Next.js, React, Monaco, xterm, Just Bash, AI SDK, Excalidraw, PGlite, Pyodide, and Playwright. ryOS was researched for architecture; no AGPL source was copied.
+
+Offline use is opt-in under **Settings → Desktop → Offline access**. The Cloudflare build downloads the shell, Applications, Notes and Settings; model calls, live websites and uncached runtimes still need a network. See [offline behavior and update rules](docs/OFFLINE.md).

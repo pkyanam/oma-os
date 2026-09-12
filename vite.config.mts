@@ -3,20 +3,29 @@ import react from "@vitejs/plugin-react";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import { fileURLToPath } from "node:url";
 import { disableUnrequestedRemoteAI } from "./scripts/local-cloudflare-config.mjs";
+import { offlineDesktopPlugin } from "./scripts/offline-build.mjs";
 export default defineConfig(({ command }) => ({
   plugins: [
     react(),
+    offlineDesktopPlugin(),
     cloudflare(
       command === "serve"
         ? {
-            remoteBindings: process.env.OMA_REMOTE_AI === "1",
+            remoteBindings:
+              process.env.OMA_REMOTE_AI === "1" ||
+              process.env.OMA_REMOTE_BROWSER === "1",
             config(config) {
-              disableUnrequestedRemoteAI(config, process.env.OMA_REMOTE_AI);
+              disableUnrequestedRemoteAI(
+                config,
+                process.env.OMA_REMOTE_AI,
+                process.env.OMA_REMOTE_BROWSER,
+              );
             },
           }
         : {},
     ),
   ],
+  optimizeDeps: { include: ["just-bash", "just-bash/browser"] },
   resolve: {
     alias: {
       "@": fileURLToPath(new URL(".", import.meta.url)),

@@ -7,9 +7,9 @@ export type Task = {
 };
 export type TaskBoard = { version: 1; title: string; tasks: Task[] };
 export const taskColumns: { id: TaskStatus; title: string; description: string }[] = [
-  { id: 'todo', title: 'To do', description: 'Make a little room for what matters.' },
-  { id: 'doing', title: 'In progress', description: 'One thing at a time.' },
-  { id: 'done', title: 'Done', description: 'Small steps count.' },
+  { id: 'todo', title: 'To do', description: 'No tasks yet.' },
+  { id: 'doing', title: 'In progress', description: 'No tasks in progress.' },
+  { id: 'done', title: 'Done', description: 'No completed tasks.' },
 ];
 export const emptyBoard = (): TaskBoard => ({ version: 1, title: 'My work', tasks: [] });
 export function parseBoard(text: string): TaskBoard {

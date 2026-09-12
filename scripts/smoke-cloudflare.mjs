@@ -29,7 +29,11 @@ try {
   assert.equal(denied.status, 422);
   const browser = await (await call('/api/browser-runtime?capabilities=1')).json();
   assert.equal(browser.provider, 'cloudflare');
-  assert.equal(browser.requiresAuthentication, true);
+  assert.equal(browser.requiresAuthentication, browser.transport === 'live-view');
+  if (config.workersAI?.enabled) {
+    const deniedAI = await fetch(origin + '/api/ai/v1/chat/completions', {method: 'POST', headers: {Origin: origin, 'Content-Type': 'application/json'}, body: '{}', signal: AbortSignal.timeout(30000)});
+    assert.equal(deniedAI.status, 401, 'Hosted inference must require authentication');
+  }
   for (let i = 0; i < 2; i++) {
     const login = await call('/api/chatgpt/login', {method: 'POST'});
     assert.equal(login.status, 200, 'Sign-in initialization failed');

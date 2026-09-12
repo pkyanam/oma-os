@@ -21,6 +21,7 @@ import {
 } from "@/lib/fs/backup";
 import { formatBytes } from "@/lib/files/kinds";
 import "./system-apps.css";
+import OfflineSettings from "./OfflineSettings";
 
 export default function Settings() {
   const [section, setSection] = useState("general"),
@@ -106,9 +107,7 @@ export default function Settings() {
   return (
     <div className="system-app settings-app">
       <header className="system-app-heading">
-        <span className="system-eyebrow">YOUR DESKTOP</span>
-        <h1>Make yourself at home.</h1>
-        <p>Local files. Clear controls. A workspace you can take with you.</p>
+        <h1>Settings</h1>
       </header>
       <nav className="system-tabs" aria-label="Settings sections">
         {[
@@ -183,10 +182,6 @@ export default function Settings() {
                   Dock / Home Screen” action. A separate app window gives the
                   desktop more space and fewer conflicting shortcuts.
                 </p>
-                <p className="settings-small">
-                  Tokyo Night · automatic layout for small screens · touch
-                  window switcher
-                </p>
                 <button
                   className="system-action"
                   onClick={() => useDesktop.getState().setOverlay("window")}
@@ -195,6 +190,7 @@ export default function Settings() {
                 </button>
               </div>
             </section>
+            <OfflineSettings />
           </>
         )}
         {section === "storage" && (
@@ -371,9 +367,8 @@ export default function Settings() {
               <div>
                 <h2>oma.os</h2>
                 <p>
-                  A browser-native desktop inspired by Omarchy. Built for
-                  thinking, making, and working alongside an agent. Open source
-                  under the MIT license.
+                  A browser desktop inspired by Omarchy. Open source under the
+                  MIT license.
                 </p>
                 <dl className="system-facts">
                   <dt>Files</dt>

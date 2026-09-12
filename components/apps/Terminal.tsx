@@ -34,6 +34,7 @@ export default function Terminal({
       shellView.current?.setAttribute("aria-busy", String(running));
       if (executionStatus.current) executionStatus.current.hidden = !running;
     };
+    markRunning(false);
     const term = new XTerm({
       fontFamily: "JetBrains Mono, monospace",
       fontSize: 13,
@@ -118,8 +119,8 @@ export default function Terminal({
         cursor = 0;
         busy = true;
         markRunning(true);
-        void shell
-          .execute(value)
+        void Promise.resolve()
+          .then(() => shell.execute(value))
           .then((result) => {
             if (disposed || !useDesktop.getState().tiles[id]) return;
             if (value.trim() === "clear") term.clear();
@@ -151,7 +152,7 @@ export default function Terminal({
           })
           .finally(() => {
             busy = false;
-            markRunning(false);
+            if (!disposed) markRunning(false);
           });
       } else if (data === "\u0003") {
         term.write("^C\r\n" + prompt());

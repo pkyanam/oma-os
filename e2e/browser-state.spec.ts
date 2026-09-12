@@ -122,3 +122,66 @@ test("Cloudflare sign-in requirement is actionable inside Browser", async ({
     app.locator('iframe[title="Cloudflare live browser"]'),
   ).toHaveCount(0);
 });
+
+test("visible cloud browser heartbeats without focus and pauses in a hidden workspace", async ({
+  page,
+}) => {
+  const actions: string[] = [];
+  await page.route(/\/api\/browser-runtime\?capabilities=1$/, (route) =>
+    route.fulfill({ json: { available: true, transport: "live-view" } }),
+  );
+  await page.route("https://live.browser.run/**", (route) =>
+    route.fulfill({ contentType: "text/html", body: "<p>Browser fixture</p>" }),
+  );
+  await page.route(/\/api\/browser-runtime$/, async (route) => {
+    const input = route.request().postDataJSON();
+    actions.push(input.action);
+    await route.fulfill({
+      json: {
+        sessionId: "visible-cloud",
+        viewerUrl: "https://live.browser.run/fixture",
+        url: "https://example.com/",
+        title: "Example",
+        expiresAt: Date.now() + 900000,
+      },
+    });
+  });
+  await page.clock.install();
+  await boot(page);
+  const app = await launch(page, "Browser");
+  await expect(app.locator(".oma-browser")).toHaveAttribute(
+    "data-runtime",
+    "cloudflare",
+  );
+  const address = app.getByRole("textbox", { name: "Browser address" });
+  await address.fill("https://example.com/");
+  await address.press("Enter");
+  await expect(
+    app.locator('iframe[title="Cloudflare live browser"]'),
+  ).toBeVisible();
+  await launch(page, "Agent");
+  await page.keyboard.press("Alt+Shift+Digit1");
+  await page.getByRole("button", { name: "Workspace 1", exact: true }).click();
+  await expect(app).not.toHaveClass(/focused/);
+  await expect(app.locator(".cloud-browser")).toHaveAttribute(
+    "data-visible",
+    "true",
+  );
+  const before = actions.filter((x) => x === "heartbeat").length;
+  await page.clock.runFor(31000);
+  await expect
+    .poll(() => actions.filter((x) => x === "heartbeat").length)
+    .toBeGreaterThan(before);
+  await page.getByRole("button", { name: "Workspace 2", exact: true }).click();
+  await expect(page.locator(".cloud-browser")).toHaveAttribute(
+    "data-visible",
+    "false",
+  );
+  const hidden = actions.filter((x) => x === "heartbeat").length;
+  await page.clock.runFor(61000);
+  expect(actions.filter((x) => x === "heartbeat").length).toBe(hidden);
+  await page.getByRole("button", { name: "Workspace 1", exact: true }).click();
+  await expect
+    .poll(() => actions.filter((x) => x === "heartbeat").length)
+    .toBeGreaterThan(hidden);
+});

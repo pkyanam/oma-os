@@ -27,8 +27,8 @@ class ClientBoundary extends Component<
   }
   render() {
     return this.state.error ? (
-      <div className="loading-client">
-        This client encountered an error. Close and reopen it.
+      <div className="loading-client" role="alert">
+        This app encountered an error. Reconnect if offline, save your work in other apps, then reload the desktop.
       </div>
     ) : (
       this.props.children

@@ -137,6 +137,22 @@ export async function routeCloudBrowser(
   identity: string | undefined,
 ) {
   const url = new URL(request.url);
+  if (!env.BROWSER || !env.BROWSER_SESSIONS) {
+    const reason =
+      "Managed browsing requires a Cloudflare deployment or explicit remote browser development. Document mode remains available.";
+    return Response.json(
+      request.method === "GET" && url.searchParams.has("capabilities")
+        ? { available: false, requiresAuthentication: false, reason }
+        : { error: reason },
+      {
+        status:
+          request.method === "GET" && url.searchParams.has("capabilities")
+            ? 200
+            : 503,
+        headers: { "Cache-Control": "no-store" },
+      },
+    );
+  }
   if (request.method === "GET" && url.searchParams.has("capabilities"))
     return Response.json(
       {
@@ -187,6 +203,7 @@ export async function routeCloudBrowser(
 /** Called only after successful logout; the identity is a verified signed SID.
  * This revokes an existing browser even if a previously authorized start is queued. */
 export async function closeCloudBrowser(env: BrowserEnv, identity: string) {
+  if (!env.BROWSER || !env.BROWSER_SESSIONS) return;
   const response = await env.BROWSER_SESSIONS.get(
     env.BROWSER_SESSIONS.idFromName(identity),
   ).fetch(

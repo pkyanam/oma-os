@@ -23,3 +23,16 @@ This connects to hosted AI and can consume account usage. It is never enabled by
 the installer or CI. `vite build` uses the unchanged production Wrangler bindings,
 so deployments retain Workers AI. The configuration does not read, print, or copy
 Cloudflare credentials.
+
+Managed Browser Run is also unbound by default in local Vite. Its placeholder
+binding cannot provide a live browser. Enable it separately with a configured
+Cloudflare account:
+
+```sh
+OMA_REMOTE_BROWSER=1 npm run dev:cloudflare
+```
+
+This sets `browser.remote: true` and permits remote binding connections. Combine
+both opt-ins only when you intend to use both managed services. Without opt-ins,
+the Cloudflare local profile uses document browsing; the alternative Node profile
+can use locally installed Chromium. Production Browser Run bindings are unchanged.
