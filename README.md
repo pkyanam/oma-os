@@ -105,7 +105,7 @@ Open **Agent → Model & connection**.
 
 **ChatGPT account:** the bundled [Login with ChatGPT](https://github.com/opencoredev/login-with-chatgpt) community SDK handles device authorization and server-side proxying. Read the in-app consent text. This is not an official OpenAI sign-in SDK. Models are discovered from the account. Cloudflare keeps encrypted sessions in per-session SQLite Durable Objects. The Node profile uses `.oma-auth` or Redis; disconnect removes the session. A configured login route does not guarantee that a particular account or model is eligible.
 
-**Cloudflare model (optional):** explicitly select `@cf/zai-org/glm-4.7-flash`. ChatGPT sign-in supplies account identity for this mode; inference runs on Workers AI and is billed to the deployment, not your ChatGPT subscription. A coordinated Durable Object caps daily calls and input/output budgets. This mode is implemented; actual inference availability depends on the deployed account and model service. See [budgets and verification](docs/DEPLOYMENT.md#workers-ai-mode).
+**Cloudflare models (optional):** choose Workers AI in Agent, with GLM 5.3 Flash, DeepSeek V4 Flash, Qwen 3.8 27B, or Kimi K2.7 Code. No ChatGPT login or provider key is required. Inference is billed to the deployment owner. Coordinated daily network and deployment budgets limit usage. See [budgets and verification](docs/DEPLOYMENT.md#workers-ai-mode).
 
 **Provider key:** enter an OpenAI-compatible endpoint, key, and model ID. Requests go directly from the browser to a CORS-enabled provider. Keys stay in tab memory; endpoint/model preferences can persist. Reloading requires reentering the key.
 

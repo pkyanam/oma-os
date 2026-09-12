@@ -63,19 +63,19 @@ Managed website sessions use owner-scoped coordination and temporary Live View a
 
 ### Workers AI mode
 
-The optional model is `@cf/zai-org/glm-4.7-flash`, selected explicitly in Agent. It requires `AI`, `AI_QUOTA`, and a stable `LWC_SECRET` of at least 32 characters. ChatGPT sign-in establishes account identity; this mode sends inference to Cloudflare and charges the deployment account. It does not consume ChatGPT subscription model access.
+Workers AI offers DeepSeek V4 Flash (default), GLM 5.3 Flash, Qwen 3.8 27B, and Kimi K2.7 Code. Select this connection explicitly in Agent. It requires `AI`, `AI_QUOTA`, and a stable `LWC_SECRET` of at least 32 characters. No ChatGPT login or provider key is required. This mode sends inference to Cloudflare and charges the deployment account; it does not consume ChatGPT subscription access.
 
 `cloudflare/ai.ts` defines these coordinated UTC-day reservation limits:
 
-| Budget | Per account | Entire deployment |
+| Budget | Per network | Entire deployment |
 | --- | ---: | ---: |
 | Calls | 16 | 64 |
 | Input bytes | 262,144 | 1,048,576 |
 | Reserved output tokens | 32,768 | 131,072 |
 
-Each request permits at most 262,144 body bytes and 2,048 output tokens. Concurrency is limited to one active request per account and four per deployment. Reservations are atomic in one quota Durable Object; failed/cancelled calls are intentionally not refunded. Stored quota state contains hashed account identifiers, counters, and temporary leases, not prompts. The model service still processes submitted text; do not equate quota storage policy with provider retention policy. These application budgets constrain usage but are not a currency-denominated billing guarantee.
+Each request permits at most 262,144 body bytes and 2,048 output tokens. Concurrency is limited to one active request per network and four per deployment. Reservations are atomic in one quota Durable Object; failed/cancelled calls are intentionally not refunded. Stored quota state contains daily HMAC network identifiers (derived from Cloudflare’s trusted client IP), counters, and temporary leases, not prompts. The model service still processes submitted text; do not equate quota storage policy with provider retention policy. People sharing an IP share the network budget; changing cookies or signing in does not reset it. These application budgets constrain usage but are not a currency-denominated billing guarantee.
 
-The implementation supports text/tool messages. It does not establish that a particular hosted inference request succeeded: verify with an authenticated account after deployment, and preserve the direct-provider alternative.
+The implementation supports text/tool messages. It does not establish that a particular hosted inference request succeeded: verify each selected model after deployment, and preserve the direct-provider alternative.
 
 ### Verify the deployed origin
 

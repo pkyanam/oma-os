@@ -1,5 +1,9 @@
-import { routeAI, aiEnabled, WORKERS_AI_MODEL, AI_LIMITS } from './ai';
-export { AIQuota } from './ai';
+import {
+  WORKERS_AI_MODELS,
+  WORKERS_AI_DEFAULT_MODEL,
+} from "../lib/agent/workers-models";
+import { routeAI, aiEnabled, AI_LIMITS } from "./ai";
+export { AIQuota } from "./ai";
 import {
   routeAuth,
   authenticatedIdentity,
@@ -65,7 +69,15 @@ export default {
               }
             : {}),
         },
-        workersAI: { enabled: aiEnabled(env), models: [WORKERS_AI_MODEL], limits: AI_LIMITS },
+        workersAI: {
+          enabled: aiEnabled(env),
+          models: WORKERS_AI_MODELS.map((model) => model.id),
+          modelOptions: WORKERS_AI_MODELS,
+          requiresAuthentication: false,
+          quotaScope: "network",
+          defaultModel: WORKERS_AI_DEFAULT_MODEL,
+          limits: AI_LIMITS,
+        },
         direct: true,
         platform: "cloudflare",
       });
@@ -86,7 +98,8 @@ export default {
         return json({ error: "Too many requests. Try again shortly." }, 429);
     }
     try {
-      if (path === '/api/ai/v1/chat/completions') return await routeAI(request, env, ctx);
+      if (path === "/api/ai/v1/chat/completions")
+        return await routeAI(request, env, ctx);
       if (path === "/api/browser-runtime")
         return await routeCloudBrowser(
           request,

@@ -1,4 +1,5 @@
 "use client";
+import { modelConnectionIssue } from "@/lib/agent/readiness";
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
   ArrowUp,
@@ -84,9 +85,11 @@ export default function Agent({ active }: { active: boolean }) {
     running = useRef(false),
     mounted = useRef(true),
     approvalTail = useRef<Promise<unknown>>(Promise.resolve());
-  const connected =
-    !!config.model &&
-    (config.mode === "direct" ? !!config.apiKey : config.authenticated);
+  const connectionIssue = modelConnectionIssue(config);
+  const connected = connectionIssue === null;
+  useEffect(() => {
+    setFailed(false);
+  }, [config.model, config.mode, config.authenticated, config.apiKey]);
   current.current = conversation;
   const persist = useCallback((value: Conversation) => {
     if (!value.messages.length || deleted.current.has(value.id)) return;
@@ -189,15 +192,29 @@ export default function Agent({ active }: { active: boolean }) {
     });
   }, [busy, connected, failed]);
   useEffect(() => {
-    void fetch("/api/chatgpt/session")
+    const controller = new AbortController();
+    let superseded = false;
+    // A newer login/logout transition makes this initial snapshot stale.
+    // The connection hook owns subsequent auth changes.
+    const unsubscribe = useAgentConfig.subscribe((current, previous) => {
+      if (current.authenticated !== previous.authenticated) {
+        superseded = true;
+        controller.abort();
+      }
+    });
+    void fetch("/api/chatgpt/session", { signal: controller.signal })
       .then((response) => (response.ok ? response.json() : null))
       .then((session) => {
-        if (session)
+        if (session && !superseded && !controller.signal.aborted)
           useAgentConfig.setState({
             authenticated: session.status === "authenticated",
           });
       })
       .catch(() => {});
+    return () => {
+      unsubscribe();
+      controller.abort();
+    };
   }, []);
   const updateMessages = (
     update: (messages: TranscriptMessage[]) => TranscriptMessage[],
@@ -329,7 +346,7 @@ export default function Agent({ active }: { active: boolean }) {
     if (!connected) {
       append(
         "system",
-        "No model connected. Open Model & connection to sign in or add a provider key.",
+        connectionIssue!,
       );
       setPanel("settings");
       running.current = false;

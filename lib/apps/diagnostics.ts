@@ -36,7 +36,7 @@ export function describeModel(input: {
   if (
     input.status === "offline" ||
     !input.model ||
-    (input.mode !== "direct" && !input.authenticated)
+    (input.mode === "chatgpt" && !input.authenticated)
   )
     return {
       label: "Agent",

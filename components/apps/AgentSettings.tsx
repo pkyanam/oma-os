@@ -1,8 +1,13 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useLoginWithChatGPT } from "@opencoredev/loginwithchatgpt-react";
 import { Check, RefreshCw, ExternalLink, X } from "lucide-react";
-import { useAgentConfig, providerURL } from "@/lib/agent/settings";
+import {
+  useAgentConfig,
+  providerURL,
+  selectAgentMode,
+  selectAgentModel,
+} from "@/lib/agent/settings";
 import { WORKERS_AI_MODEL, workersAIAvailability } from "@/lib/agent/hosted";
 import { discoverModels } from "@/lib/agent/harness";
 export default function AgentSettings({ onClose }: { onClose: () => void }) {
@@ -15,6 +20,25 @@ export default function AgentSettings({ onClose }: { onClose: () => void }) {
       enabled: boolean;
       reason?: string;
     }>();
+  const discoveryRequest = useRef(0);
+  useEffect(() => {
+    const unsubscribe = useAgentConfig.subscribe((next, previous) => {
+      if (
+        next.mode !== previous.mode ||
+        next.baseURL !== previous.baseURL ||
+        next.apiKey !== previous.apiKey ||
+        next.authenticated !== previous.authenticated
+      ) {
+        discoveryRequest.current++;
+        setLoading(false);
+        setModels([]);
+      }
+    });
+    return () => {
+      discoveryRequest.current++;
+      unsubscribe();
+    };
+  }, []);
   useEffect(() => {
     void fetch("/api/agent-config")
       .then((r) => r.json())
@@ -31,16 +55,25 @@ export default function AgentSettings({ onClose }: { onClose: () => void }) {
       });
   }, []);
   useEffect(() => {
-    if (config.mode === "workers-ai")
-      useAgentConfig.setState({ model: WORKERS_AI_MODEL });
-  }, [config.mode]);
+    if (
+      config.mode === "workers-ai" &&
+      hosted?.enabled &&
+      !hosted.models.includes(config.model)
+    )
+      selectAgentModel(hosted.models[0]);
+  }, [config.mode, config.model, hosted]);
   const refresh = async () => {
     const requested = useAgentConfig.getState();
+    const requestId = ++discoveryRequest.current;
     const currentRequest = () => {
       const current = useAgentConfig.getState();
       return (
+        requestId === discoveryRequest.current &&
         current.mode === requested.mode &&
-        (requested.mode !== "direct" || current.baseURL === requested.baseURL)
+        current.authenticated === requested.authenticated &&
+        (requested.mode !== "direct" ||
+          (current.baseURL === requested.baseURL &&
+            current.apiKey === requested.apiKey))
       );
     };
     setLoading(true);
@@ -53,13 +86,12 @@ export default function AgentSettings({ onClose }: { onClose: () => void }) {
         throw new Error(
           "No models returned. Enter a model ID supported by this provider.",
         );
-      if (!ids.includes(useAgentConfig.getState().model))
-        useAgentConfig.setState({ model: ids[0] });
+      if (!useAgentConfig.getState().model) selectAgentModel(ids[0]);
     } catch (e) {
       if (currentRequest())
         setError(e instanceof Error ? e.message : String(e));
     } finally {
-      setLoading(false);
+      if (currentRequest()) setLoading(false);
     }
   };
   return (
@@ -74,7 +106,7 @@ export default function AgentSettings({ onClose }: { onClose: () => void }) {
         <button
           className={config.mode === "chatgpt" ? "selected" : ""}
           onClick={() => {
-            useAgentConfig.setState({ mode: "chatgpt", model: "" });
+            selectAgentMode("chatgpt");
             setModels([]);
             setError("");
           }}
@@ -84,7 +116,7 @@ export default function AgentSettings({ onClose }: { onClose: () => void }) {
         <button
           className={config.mode === "direct" ? "selected" : ""}
           onClick={() => {
-            useAgentConfig.setState({ mode: "direct", model: "" });
+            selectAgentMode("direct");
             setModels([]);
             setError("");
           }}
@@ -94,10 +126,7 @@ export default function AgentSettings({ onClose }: { onClose: () => void }) {
         <button
           className={config.mode === "workers-ai" ? "selected" : ""}
           onClick={() => {
-            useAgentConfig.setState({
-              mode: "workers-ai",
-              model: WORKERS_AI_MODEL,
-            });
+            selectAgentMode("workers-ai", WORKERS_AI_MODEL);
             setModels([]);
             setError("");
           }}
@@ -108,23 +137,15 @@ export default function AgentSettings({ onClose }: { onClose: () => void }) {
       {config.mode === "workers-ai" ? (
         <>
           <p className="connection-note">
-            GLM 4.7 Flash runs on this deployment’s Cloudflare Workers AI
-            allowance. Sign in with ChatGPT to identify your session; inference
-            uses Cloudflare, not your ChatGPT plan. No provider key is needed.
-            Shared daily limits apply; there is no automatic fallback.
+            Run on Cloudflare with no sign-in or provider key. Choose a model
+            below. Daily limits apply per network and across this deployment;
+            your selected model receives the conversation and tool results.
           </p>
           {!hosted?.enabled && (
             <p className="connection-note">
               {hosted
                 ? "Workers AI is not enabled on this deployment."
                 : "Checking Workers AI availability…"}
-            </p>
-          )}
-          {availability?.enabled ? (
-            <ChatGPTConnection hosted onConnected={() => void refresh()} />
-          ) : (
-            <p className="connection-note">
-              {availability?.reason ?? "Checking sign-in availability…"}
             </p>
           )}
         </>
@@ -172,14 +193,31 @@ export default function AgentSettings({ onClose }: { onClose: () => void }) {
       <label>
         Model
         <div className="model-field">
-          <input
-            aria-label="Model ID"
-            list="oma-models"
-            value={config.model}
-            placeholder="Refresh models or enter a model ID"
-            readOnly={config.mode === "workers-ai"}
-            onChange={(e) => useAgentConfig.setState({ model: e.target.value })}
-          />
+          {config.mode === "workers-ai" ? (
+            <select
+              aria-label="Model ID"
+              value={config.model}
+              disabled={!hosted?.enabled}
+              onChange={(e) => selectAgentModel(e.target.value)}
+            >
+              {!hosted?.enabled && (
+                <option value={config.model}>Workers AI unavailable</option>
+              )}
+              {hosted?.models.map((model) => (
+                <option key={model} value={model}>
+                  {model.replace("@cf/", "")}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              aria-label="Model ID"
+              list="oma-models"
+              value={config.model}
+              placeholder="Refresh models or enter a model ID"
+              onChange={(e) => selectAgentModel(e.target.value)}
+            />
+          )}
           {config.mode !== "workers-ai" && (
             <button
               aria-label="Refresh models"
@@ -227,9 +265,11 @@ export default function AgentSettings({ onClose }: { onClose: () => void }) {
                 throw new Error(
                   "Workers AI is unavailable on this deployment. Choose another connection explicitly.",
                 );
-              if (config.mode === "workers-ai" && !config.authenticated)
+              if (config.mode === "chatgpt" && !config.authenticated)
+                throw new Error("Sign in to ChatGPT to use this connection.");
+              if (config.mode === "direct" && !config.apiKey)
                 throw new Error(
-                  "Sign in with ChatGPT before using the hosted Workers AI allowance.",
+                  "Enter your provider API key. Keys must be entered again after a reload.",
                 );
               onClose();
             } catch (e) {
@@ -244,22 +284,15 @@ export default function AgentSettings({ onClose }: { onClose: () => void }) {
     </div>
   );
 }
-function ChatGPTConnection({
-  onConnected,
-  hosted = false,
-}: {
-  onConnected: () => void;
-  hosted?: boolean;
-}) {
-  const auth = useLoginWithChatGPT({
-    onAuthenticated: () => {
-      useAgentConfig.setState({ authenticated: true });
-      onConnected();
-    },
-  });
+function ChatGPTConnection({ onConnected }: { onConnected: () => void }) {
+  const auth = useLoginWithChatGPT();
+  const connectedCallback = useRef(onConnected);
+  connectedCallback.current = onConnected;
   useEffect(() => {
+    if (auth.status === "loading") return;
     useAgentConfig.setState({ authenticated: auth.isAuthenticated });
-  }, [auth.isAuthenticated]);
+    if (auth.isAuthenticated) connectedCallback.current();
+  }, [auth.isAuthenticated, auth.status]);
   return (
     <div className="chatgpt-connection">
       {auth.isAuthenticated ? (
@@ -289,12 +322,11 @@ function ChatGPTConnection({
       ) : (
         <>
           <p className="connection-note">
-            {hosted
-              ? "ChatGPT sign-in establishes your identity for this deployment’s Workers AI allowance. Your prompts are sent to Cloudflare for inference. "
-              : "Requests use your ChatGPT plan. Prompts pass through this app’s bundled auth service. "}
-            The sign-in service stores encrypted session credentials and never
-            sees your password. Disconnect deletes the stored session. This
-            community SDK is not an official OpenAI sign-in integration.
+            Requests use your ChatGPT plan. Prompts pass through this app’s
+            bundled auth service. The sign-in service stores encrypted session
+            credentials and never sees your password. Disconnect deletes the
+            stored session. This community SDK is not an official OpenAI sign-in
+            integration.
           </p>
           <button
             className="connect-button"

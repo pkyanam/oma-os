@@ -130,6 +130,10 @@ export async function runAgent(
   const agent = new ToolLoopAgent({
     model,
     instructions,
+    // Codex is stateless. Serialize full history before the proxy strips
+    // server-side item references; setting store=false only on the server is too late.
+    providerOptions:
+      config.mode === "chatgpt" ? { openai: { store: false } } : undefined,
     tools: config.tools ? tools : undefined,
     stopWhen: stepCountIs(12),
     maxOutputTokens: config.mode === "workers-ai" ? 2048 : 8192,

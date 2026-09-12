@@ -32,7 +32,9 @@ try {
   assert.equal(browser.requiresAuthentication, browser.transport === 'live-view');
   if (config.workersAI?.enabled) {
     const deniedAI = await fetch(origin + '/api/ai/v1/chat/completions', {method: 'POST', headers: {Origin: origin, 'Content-Type': 'application/json'}, body: '{}', signal: AbortSignal.timeout(30000)});
-    assert.equal(deniedAI.status, 401, 'Hosted inference must require authentication');
+    assert.equal(deniedAI.status, 400, 'Anonymous hosted inference must validate an invalid request without running a model');
+    assert.ok(config.workersAI.models.includes('@cf/zai-org/glm-5.3-flash'));
+    assert.equal(config.workersAI.models.length, 4);
   }
   for (let i = 0; i < 2; i++) {
     const login = await call('/api/chatgpt/login', {method: 'POST'});

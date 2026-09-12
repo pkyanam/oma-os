@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { sign } from "@opencoredev/loginwithchatgpt-server";
+
 import {
   AIQuota,
   AI_LIMITS,
@@ -8,6 +8,8 @@ import {
   reserveBudget,
   validateAIInput,
   routeAI,
+  networkIdentity,
+  normalizeAIStream,
   type Budget,
 } from "../../cloudflare/ai";
 const account = "a".repeat(64);
@@ -50,20 +52,8 @@ async function setup() {
   const store = quotaStore();
   let calls = 0;
   const secret = "s".repeat(40);
-  const cookie =
-    "lwc_session=" + encodeURIComponent(await sign("x".repeat(32), secret));
   const env: Parameters<typeof routeAI>[1] = {
     LWC_SECRET: secret,
-    AUTH_SESSIONS: {
-      idFromName: (n) => ({ toString: () => n }),
-      get: () => ({
-        fetch: async () =>
-          Response.json({
-            status: "authenticated",
-            user: { accountId: "real-account" },
-          }),
-      }),
-    },
     AI_QUOTA: {
       idFromName: (n) => n,
       get: () => ({ fetch: (r) => store.quota.fetch(r) }),
@@ -83,7 +73,11 @@ async function setup() {
   const request = (body: unknown = input(), headers: HeadersInit = {}) =>
     new Request("https://oma.test/api/ai/v1/chat/completions", {
       method: "POST",
-      headers: { cookie, "content-type": "application/json", ...headers },
+      headers: {
+        "CF-Connecting-IP": "192.0.2.1",
+        "content-type": "application/json",
+        ...headers,
+      },
       body: JSON.stringify(body),
     });
   return { env, request, store, calls: () => calls };
@@ -203,11 +197,12 @@ test("atomic concurrent reservation allows one account lease; release retains sp
   assert.equal((await reserve()).status, 200);
   assert.equal(read()?.total.calls, 2);
 });
-test("route rejects unauthenticated, cross origin, oversized UTF8 and malformed input without inference", async () => {
+test("route rejects unidentified, cross origin, oversized UTF8 and malformed input without inference", async () => {
   const s = await setup();
   assert.equal(
-    (await routeAI(s.request(input(), { cookie: "" }), s.env)).status,
-    401,
+    (await routeAI(s.request(input(), { "CF-Connecting-IP": "" }), s.env))
+      .status,
+    403,
   );
   assert.equal(
     (await routeAI(s.request(input(), { origin: "https://evil.test" }), s.env))
@@ -309,7 +304,7 @@ test("existing AI SDK completes a streamed function call and follow-up through t
       start(controller) {
         controller.enqueue(
           new TextEncoder().encode(
-            `data: ${JSON.stringify(chunk)}\n\ndata: ${JSON.stringify(end)}\n\ndata: [DONE]\n\n`,
+            `data: ${JSON.stringify(chunk)}\n\ndata: ${JSON.stringify(end)}\n\ndata: ${JSON.stringify({ response: "", usage: { prompt_tokens: 1336, completion_tokens: 13, total_tokens: 1349, prompt_tokens_details: { cached_tokens: 0 }, neurons: 18.8 } })}\n\ndata: [DONE]\n\n`,
           ),
         );
         controller.close();
@@ -352,28 +347,50 @@ test("existing AI SDK completes a streamed function call and follow-up through t
   assert.equal(s.store.read()?.total.calls, 2);
 });
 
-test("re-login cannot reset an account lease; pending sessions cannot spend inference", async () => {
+test("anonymous requests share a network allowance despite cookie changes", async () => {
   const s = await setup();
   s.env.AI!.run = async () => new ReadableStream();
   const first = await routeAI(s.request(), s.env);
   assert.equal(first.status, 200);
-  const differentCookie =
-    "lwc_session=" +
-    encodeURIComponent(await sign("y".repeat(32), s.env.LWC_SECRET));
   const second = await routeAI(
-    s.request(input(), { cookie: differentCookie }),
+    s.request(input(), { cookie: "arbitrary=different" }),
     s.env,
   );
   assert.equal(second.status, 429);
   assert.match(await second.text(), /account_busy/);
   assert.equal(s.store.read()?.total.calls, 1);
   await first.body!.cancel();
-  s.env.AUTH_SESSIONS.get = () => ({
-    fetch: async () =>
-      Response.json({ status: "pending", user: { accountId: "real-account" } }),
-  });
-  assert.equal((await routeAI(s.request(), s.env)).status, 401);
-  assert.equal(s.store.read()?.total.calls, 1);
+});
+
+test("network identifiers are daily keyed digests, canonicalize IPs, and ignore forwarded headers", async () => {
+  const secret = "s".repeat(40),
+    now = Date.UTC(2026, 8, 12);
+  const req = (ip: string) =>
+    new Request("https://oma.test", { headers: { "CF-Connecting-IP": ip } });
+  const a = await networkIdentity(req("192.0.2.1"), secret, now);
+  assert.match(a!, /^[a-f0-9]{64}$/);
+  assert.equal(a, await networkIdentity(req("::ffff:192.0.2.1"), secret, now));
+  assert.notEqual(
+    a,
+    await networkIdentity(req("192.0.2.1"), secret, now + 86400000),
+  );
+  assert.notEqual(
+    a,
+    await networkIdentity(req("192.0.2.1"), "t".repeat(40), now),
+  );
+  assert.equal(
+    await networkIdentity(
+      new Request("https://oma.test", {
+        headers: { "X-Forwarded-For": "192.0.2.1" },
+      }),
+      secret,
+    ),
+    undefined,
+  );
+  assert.equal(await networkIdentity(req("invalid"), secret), undefined);
+  assert.ok(
+    await networkIdentity(new Request("http://localhost:3017"), secret),
+  );
 });
 
 test("deployment lease cap applies across accounts and daily reset retains active leases", () => {
@@ -386,4 +403,115 @@ test("deployment lease cap applies across accounts and daily reset retains activ
     "deployment_busy",
   );
   assert.ok(reserveBudget(budget, "f".repeat(64), 1, 1, now + 66000).budget);
+});
+
+test("every allowlisted model reaches the binding without fallback or authentication", async () => {
+  const { WORKERS_AI_MODELS } = await import("./workers-models");
+  for (const model of WORKERS_AI_MODELS) {
+    const s = await setup();
+    let actual = "";
+    s.env.AI!.run = async (id, payload) => {
+      actual = id;
+      assert.equal((payload as { model: string }).model, id);
+      return new ReadableStream({
+        start(c) {
+          c.close();
+        },
+      });
+    };
+    const response = await routeAI(
+      s.request({ ...input(), model: model.id }),
+      s.env,
+    );
+    assert.equal(response.status, 200);
+    await response.text();
+    assert.equal(actual, model.id);
+  }
+});
+
+test("normalizer handles fragmented UTF8, CRLF, tool calls and native usage without losing metadata", async () => {
+  const tool = {
+    id: "id",
+    object: "chat.completion.chunk",
+    created: 1,
+    model: WORKERS_AI_MODEL,
+    choices: [
+      {
+        index: 0,
+        delta: {
+          tool_calls: [
+            {
+              index: 0,
+              id: "call",
+              type: "function",
+              function: { name: "inspect", arguments: '{"text":"界"}' },
+            },
+          ],
+        },
+        finish_reason: "tool_calls",
+      },
+    ],
+  };
+  const usage = {
+    prompt_tokens: 1336,
+    completion_tokens: 13,
+    total_tokens: 1349,
+    prompt_tokens_details: { cached_tokens: 0 },
+    neurons: 18.8,
+  };
+  const bytes = new TextEncoder().encode(
+    `: keepalive\r\n\r\ndata: ${JSON.stringify(tool)}\r\n\r\ndata: ${JSON.stringify({ response: "", usage })}\r\n\r\ndata: [DONE]\r\n\r\n`,
+  );
+  let offset = 0;
+  const source = new ReadableStream<Uint8Array>({
+    pull(c) {
+      if (offset === bytes.length) c.close();
+      else {
+        c.enqueue(bytes.slice(offset, offset + 3));
+        offset = Math.min(offset + 3, bytes.length);
+      }
+    },
+  });
+  const output = await new Response(
+    normalizeAIStream(source, WORKERS_AI_MODEL),
+  ).text();
+  const events = output
+    .trim()
+    .split("\n\n")
+    .map((e) => e.slice(6));
+  assert.deepEqual(JSON.parse(events[0]), tool);
+  assert.deepEqual(JSON.parse(events[1]).choices, []);
+  assert.deepEqual(JSON.parse(events[1]).usage, usage);
+  assert.equal(events[2], "[DONE]");
+});
+test("normalizer preserves provider errors and rejects oversized event buffers", async () => {
+  const source = (text: string) =>
+    new ReadableStream<Uint8Array>({
+      start(c) {
+        c.enqueue(new TextEncoder().encode(text));
+        c.close();
+      },
+    });
+  const error = {
+    error: {
+      message: "provider unavailable",
+      type: "server_error",
+      code: "unavailable",
+    },
+  };
+  assert.match(
+    await new Response(
+      normalizeAIStream(
+        source(`data: ${JSON.stringify(error)}\n\n`),
+        WORKERS_AI_MODEL,
+      ),
+    ).text(),
+    /provider unavailable/,
+  );
+  await assert.rejects(
+    new Response(
+      normalizeAIStream(source("data: " + "x".repeat(65537)), WORKERS_AI_MODEL),
+    ).text(),
+    /size limit/,
+  );
 });

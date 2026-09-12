@@ -8,7 +8,7 @@ import {
   WORKERS_AI_MODEL,
 } from "./hosted";
 import { publicPreferences } from "./settings";
-test("hosted model streams through only the authenticated same-origin endpoint without a provider key", async () => {
+test("hosted model streams through only the same-origin endpoint without a provider key", async () => {
   let calls = 0;
   const model = workersAIModel(WORKERS_AI_MODEL, async (input, init) => {
     calls++;

@@ -6,14 +6,17 @@ export type AgentConfig = {
   apiKey: string;
   model: string;
   tools: boolean;
+  modelsByMode?: Partial<Record<AgentConfig["mode"], string>>;
 };
 export function publicPreferences(
   value: unknown,
-): Partial<Pick<AgentConfig, "mode" | "baseURL" | "model" | "tools">> {
+): Partial<
+  Pick<AgentConfig, "mode" | "baseURL" | "model" | "tools" | "modelsByMode">
+> {
   if (!value || typeof value !== "object") return {};
   const input = value as Record<string, unknown>;
   const result: Partial<
-    Pick<AgentConfig, "mode" | "baseURL" | "model" | "tools">
+    Pick<AgentConfig, "mode" | "baseURL" | "model" | "tools" | "modelsByMode">
   > = {};
   if (
     input.mode === "chatgpt" ||
@@ -31,6 +34,14 @@ export function publicPreferences(
   if (typeof input.model === "string" && input.model.length <= 200)
     result.model = input.model;
   if (typeof input.tools === "boolean") result.tools = input.tools;
+  if (input.modelsByMode && typeof input.modelsByMode === "object") {
+    result.modelsByMode = {};
+    for (const mode of ["chatgpt", "direct", "workers-ai"] as const) {
+      const model = (input.modelsByMode as Record<string, unknown>)[mode];
+      if (typeof model === "string" && model.length <= 200)
+        result.modelsByMode[mode] = model;
+    }
+  }
   return result;
 }
 export const useAgentConfig = create<
@@ -70,4 +81,20 @@ export function providerURL(input: string) {
       "Use a base URL without credentials, query parameters or fragments.",
     );
   return url.href.replace(/\/$/, "");
+}
+
+export function selectAgentMode(mode: AgentConfig["mode"], defaultModel = "") {
+  useAgentConfig.setState((current) => {
+    const modelsByMode = {
+      ...current.modelsByMode,
+      [current.mode]: current.model,
+    };
+    return { mode, modelsByMode, model: modelsByMode[mode] || defaultModel };
+  });
+}
+export function selectAgentModel(model: string) {
+  useAgentConfig.setState((current) => ({
+    model,
+    modelsByMode: { ...current.modelsByMode, [current.mode]: model },
+  }));
 }

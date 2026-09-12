@@ -38,3 +38,23 @@ test("rejects credential-bearing endpoints and malformed stored preferences", ()
     "http://localhost:11434/v1",
   );
 });
+
+test("switching connections retains each model, including a rehydrated selection", async () => {
+  const { useAgentConfig, selectAgentMode, selectAgentModel } =
+    await import("./settings");
+  useAgentConfig.setState({
+    mode: "chatgpt",
+    model: "gpt-5.6-luna",
+    modelsByMode: {},
+  });
+  selectAgentMode("direct");
+  selectAgentModel("provider-model");
+  selectAgentMode("workers-ai", "hosted-model");
+  selectAgentMode("chatgpt");
+  assert.equal(useAgentConfig.getState().model, "gpt-5.6-luna");
+  selectAgentMode("direct");
+  assert.equal(useAgentConfig.getState().model, "provider-model");
+  const preferences = publicPreferences(useAgentConfig.getState());
+  assert.equal(preferences.modelsByMode?.chatgpt, "gpt-5.6-luna");
+  assert.equal("apiKey" in preferences, false);
+});

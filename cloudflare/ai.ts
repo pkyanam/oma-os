@@ -1,9 +1,46 @@
+import ipaddr from "ipaddr.js";
 import {
-  authenticatedAccountIdentity,
-  type AuthEnv,
-} from "../companions/cloudflare-app/src/auth-core";
+  WORKERS_AI_DEFAULT_MODEL,
+  isWorkersAIModel,
+} from "../lib/agent/workers-models";
+export const WORKERS_AI_MODEL = WORKERS_AI_DEFAULT_MODEL;
 
-export const WORKERS_AI_MODEL = "@cf/zai-org/glm-4.7-flash";
+/** Cloudflare supplies CF-Connecting-IP at the edge. Never trust forwarded-for,
+ * request cookies or a client account ID. Persist only a daily keyed digest. */
+export async function networkIdentity(
+  request: Request,
+  secret: string,
+  now = Date.now(),
+): Promise<string | undefined> {
+  if (!secret || secret.length < 32) return undefined;
+  const host = new URL(request.url).hostname;
+  const local = ["localhost", "127.0.0.1", "[::1]"].includes(host);
+  const supplied = request.headers.get("CF-Connecting-IP");
+  let address: string;
+  if (!supplied && local) address = "localhost";
+  else {
+    if (!supplied || supplied.length > 64 || !ipaddr.isValid(supplied))
+      return undefined;
+    address = ipaddr.process(supplied).toString();
+  }
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const day = new Date(now).toISOString().slice(0, 10);
+  const digest = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(`oma-ai-network:${day}:${address}`),
+  );
+  return Array.from(new Uint8Array(digest), (byte) =>
+    byte.toString(16).padStart(2, "0"),
+  ).join("");
+}
+
 export const AI_LIMITS = Object.freeze({
   bodyBytes: 262144,
   outputTokens: 2048,
@@ -159,7 +196,8 @@ type Input = {
   n: 1;
   chat_template_kwargs: { enable_thinking: false };
 };
-type AIEnv = AuthEnv & {
+type AIEnv = {
+  LWC_SECRET: string;
   AI?: {
     run: (
       model: string,
@@ -199,8 +237,8 @@ function error(message: string, status: number, code: string) {
 const record = (v: unknown): v is Record<string, unknown> =>
   !!v && typeof v === "object" && !Array.isArray(v);
 export function validateAIInput(value: unknown): Input {
-  if (!record(value) || value.model !== WORKERS_AI_MODEL)
-    throw new Error("Choose the supported Cloudflare model.");
+  if (!record(value) || !isWorkersAIModel(value.model))
+    throw new Error("Choose an available Cloudflare model.");
   if (value.stream !== true)
     throw new Error("This endpoint requires streaming.");
   const max =
@@ -297,7 +335,7 @@ export function validateAIInput(value: unknown): Input {
     return result;
   });
   const input: Input = {
-    model: WORKERS_AI_MODEL,
+    model: value.model,
     messages,
     stream: true,
     stream_options: { include_usage: true },
@@ -366,6 +404,94 @@ async function readBody(request: Request): Promise<string> {
   }
   return new TextDecoder("utf-8", { fatal: true }).decode(body);
 }
+/** Workers AI can append a native response/usage event after OpenAI deltas.
+ * Parse SSE boundaries (not transport chunks), retaining bounded buffering and
+ * backpressure/cancellation through TransformStream. */
+export function normalizeAIStream(
+  stream: ReadableStream<Uint8Array>,
+  model: string,
+): ReadableStream<Uint8Array> {
+  const decoder = new TextDecoder("utf-8", { fatal: true }),
+    encoder = new TextEncoder();
+  let buffer = "",
+    totalBytes = 0,
+    done = false;
+  const emit = (
+    event: string,
+    controller: TransformStreamDefaultController<Uint8Array>,
+  ) => {
+    if (event.length > 65536)
+      throw new Error("Cloudflare AI stream event exceeded its size limit.");
+    const data = event
+      .split(/\r?\n/)
+      .filter((line) => line.startsWith("data:"))
+      .map((line) => line.slice(5).replace(/^ /, ""))
+      .join("\n");
+    if (!data) return; // Comments and keep-alive events carry no model content.
+    if (done) return;
+    if (data.trim() === "[DONE]") {
+      done = true;
+      controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+      return;
+    }
+    const value: unknown = JSON.parse(data);
+    if (!record(value))
+      throw new Error("Cloudflare AI returned an invalid stream event.");
+    let result = value;
+    if (
+      !Array.isArray(value.choices) &&
+      !value.error &&
+      (typeof value.response === "string" || record(value.usage))
+    ) {
+      result = {
+        id: typeof value.id === "string" ? value.id : "workers-ai",
+        object: "chat.completion.chunk",
+        created: typeof value.created === "number" ? value.created : 0,
+        model,
+        choices:
+          typeof value.response === "string" && value.response
+            ? [
+                {
+                  index: 0,
+                  delta: { content: value.response },
+                  finish_reason: null,
+                },
+              ]
+            : [],
+        ...(record(value.usage) ? { usage: value.usage } : {}),
+      };
+    }
+    controller.enqueue(encoder.encode(`data: ${JSON.stringify(result)}\n\n`));
+  };
+  const drain = (controller: TransformStreamDefaultController<Uint8Array>) => {
+    let match: RegExpExecArray | null;
+    while ((match = /\r?\n\r?\n/.exec(buffer))) {
+      const event = buffer.slice(0, match.index);
+      buffer = buffer.slice(match.index + match[0].length);
+      emit(event, controller);
+    }
+    if (buffer.length > 65536)
+      throw new Error("Cloudflare AI stream event exceeded its size limit.");
+  };
+  return stream.pipeThrough(
+    new TransformStream<Uint8Array, Uint8Array>({
+      transform(chunk, controller) {
+        totalBytes += chunk.byteLength;
+        if (totalBytes > 4194304)
+          throw new Error("Cloudflare AI stream exceeded its size limit.");
+        buffer += decoder.decode(chunk, { stream: true });
+        drain(controller);
+      },
+      flush(controller) {
+        buffer += decoder.decode();
+        drain(controller);
+        if (buffer.trim()) emit(buffer, controller);
+        if (!done) controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+      },
+    }),
+  );
+}
+
 export async function routeAI(
   request: Request,
   env: AIEnv,
@@ -396,12 +522,12 @@ export async function routeAI(
       .startsWith("application/json")
   )
     return error("Send application/json.", 415, "invalid_content_type");
-  const account = await authenticatedAccountIdentity(request, env);
+  const account = await networkIdentity(request, env.LWC_SECRET);
   if (!account)
     return error(
-      "Sign in with ChatGPT to use this deployment's Cloudflare model.",
-      401,
-      "authentication_required",
+      "Cloudflare could not identify this connection. Retry through the hosted application.",
+      403,
+      "network_identity_unavailable",
     );
   let input: Input, body: string;
   try {
@@ -434,7 +560,7 @@ export async function routeAI(
       result.error?.endsWith("_busy")
         ? "A Cloudflare AI request is already running. Try again shortly."
         : result.error === "account_daily_limit"
-          ? "Your Cloudflare AI daily allowance is used. Try after 00:00 UTC or choose another provider."
+          ? "Your network's Cloudflare AI daily allowance is used. Try after 00:00 UTC or choose another provider."
           : "This deployment's Cloudflare AI daily allowance is used. Try after 00:00 UTC or choose another provider.",
       429,
       result.error ?? "quota_unavailable",
@@ -456,7 +582,7 @@ export async function routeAI(
   };
   const signal = AbortSignal.any([request.signal, AbortSignal.timeout(60000)]);
   try {
-    const stream = await env.AI!.run(WORKERS_AI_MODEL, input as never, {
+    const stream = await env.AI!.run(input.model, input as never, {
       signal,
     });
     if (!(stream instanceof ReadableStream)) {
@@ -467,7 +593,7 @@ export async function routeAI(
         "invalid_upstream_response",
       );
     }
-    const reader = stream.getReader();
+    const reader = normalizeAIStream(stream, input.model).getReader();
     const abort = () => {
       const cleanup = reader
         .cancel(signal.reason)
