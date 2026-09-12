@@ -235,7 +235,10 @@ export function createAuthController(
           ]),
         });
         // Sanitize before the SDK consumes/logs upstream rejection bodies.
-        if (!response.ok && new URL(String(input)).pathname.endsWith("/responses"))
+        if (
+          !response.ok &&
+          new URL(String(input)).pathname.endsWith("/responses")
+        )
           response = await normalizeModelError(response);
         if (
           !response.body ||
@@ -274,12 +277,67 @@ export function createAuthController(
       }
     },
   });
+  const revoked = (value: unknown) =>
+    !!value &&
+    typeof value === "object" &&
+    (("code" in value && value.code === "refresh_token_invalid") ||
+      ("error" in value && value.error === "refresh_token_invalid"));
+  async function expireSession(request: Request) {
+    const url = new URL(request.url);
+    url.pathname = "/api/chatgpt/logout";
+    const headers = new Headers(request.headers);
+    headers.delete("content-length");
+    const logout = await sdk.handler(
+      new Request(url, { method: "POST", headers }),
+    );
+    return json(
+      {
+        error: {
+          message:
+            "Your ChatGPT authorization expired or was revoked. Please sign in again.",
+          type: "authentication_error",
+          code: "not_authenticated",
+        },
+      },
+      401,
+      {
+        "set-cookie": logout.headers.get("set-cookie") ?? clearCookie(request),
+      },
+    );
+  }
   return {
     fetch: (request: Request) =>
       queue(async () => {
         initialize();
-        const response = await sdk.handler(request);
-        return new URL(request.url).pathname.endsWith("/responses")
+        const path = new URL(request.url).pathname;
+        let response: Response;
+        try {
+          response = await sdk.handler(request);
+        } catch (error) {
+          if (revoked(error)) return expireSession(request);
+          if (error instanceof Error && error.name === "ChatGPTAuthError")
+            return json(
+              {
+                error: {
+                  message:
+                    "ChatGPT authentication is temporarily unavailable. Try again.",
+                  type: "authentication_error",
+                  code: "auth_upstream_unavailable",
+                },
+              },
+              503,
+            );
+          throw error;
+        }
+        // The SDK catches refresh failures for model discovery, but throws them for inference.
+        if (!response.ok && path.endsWith("/models")) {
+          const failure = await response
+            .clone()
+            .json()
+            .catch(() => null);
+          if (revoked(failure)) return expireSession(request);
+        }
+        return path.endsWith("/responses")
           ? normalizeModelError(response)
           : response;
       }),

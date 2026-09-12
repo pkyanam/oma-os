@@ -88,8 +88,17 @@ export default function AgentSettings({ onClose }: { onClose: () => void }) {
         );
       if (!useAgentConfig.getState().model) selectAgentModel(ids[0]);
     } catch (e) {
-      if (currentRequest())
+      if (currentRequest()) {
         setError(e instanceof Error ? e.message : String(e));
+        if (
+          requested.mode === "chatgpt" &&
+          e &&
+          typeof e === "object" &&
+          "status" in e &&
+          e.status === 401
+        )
+          useAgentConfig.setState({ authenticated: false });
+      }
     } finally {
       if (currentRequest()) setLoading(false);
     }
@@ -286,6 +295,7 @@ export default function AgentSettings({ onClose }: { onClose: () => void }) {
 }
 function ChatGPTConnection({ onConnected }: { onConnected: () => void }) {
   const auth = useLoginWithChatGPT();
+  const authenticated = useAgentConfig((state) => state.authenticated);
   const connectedCallback = useRef(onConnected);
   connectedCallback.current = onConnected;
   useEffect(() => {
@@ -295,7 +305,7 @@ function ChatGPTConnection({ onConnected }: { onConnected: () => void }) {
   }, [auth.isAuthenticated, auth.status]);
   return (
     <div className="chatgpt-connection">
-      {auth.isAuthenticated ? (
+      {auth.isAuthenticated && authenticated ? (
         <>
           <div className="connected-account">
             <Check size={14} />

@@ -465,6 +465,14 @@ export default function Agent({ active }: { active: boolean }) {
       flush();
     } catch (error) {
       flush();
+      if (
+        config.mode === "chatgpt" &&
+        error &&
+        typeof error === "object" &&
+        "statusCode" in error &&
+        error.statusCode === 401
+      )
+        useAgentConfig.setState({ authenticated: false });
       append(
         "system",
         controller.signal.aborted

@@ -172,3 +172,57 @@ test("ChatGPT rejection shows a readable error and replaces the green light", as
   await expect(app.locator(".connection-dot.failed")).toBeVisible();
   await expect(app.locator(".connection-dot.connected")).toHaveCount(0);
 });
+
+test("revoked ChatGPT authorization clears readiness and exposes sign-in", async ({
+  page,
+}) => {
+  let revoked = false;
+  await page.route("**/api/agent-config", (route) =>
+    route.fulfill({
+      json: {
+        chatgpt: { enabled: true },
+        workersAI: { enabled: false, models: [] },
+      },
+    }),
+  );
+  await page.route("**/api/chatgpt/session", (route) =>
+    route.fulfill({
+      json: { status: revoked ? "unauthenticated" : "authenticated" },
+    }),
+  );
+  await page.route("**/api/chatgpt/models", (route) =>
+    route.fulfill({ json: { models: [{ slug: "gpt-5.6-luna" }] } }),
+  );
+  await page.route("**/api/chatgpt/responses", (route) => {
+    revoked = true;
+    return route.fulfill({
+      status: 401,
+      json: {
+        error: {
+          message: "Your authorization was revoked. Please sign in again.",
+        },
+      },
+    });
+  });
+  await boot(page, "/", { workspace: "applications" });
+  const app = await launch(page, "Agent");
+  await app
+    .getByRole("button", { name: "Agent settings", exact: true })
+    .click();
+  await expect(app.getByLabel("Model ID")).toHaveValue("gpt-5.6-luna");
+  await app.getByRole("button", { name: "Done", exact: true }).click();
+  await app
+    .getByRole("textbox", { name: "Agent command", exact: true })
+    .fill("Hello");
+  await app.getByRole("button", { name: "Send command", exact: true }).click();
+  await expect(app.locator(".agent-message.system").last()).toContainText(
+    "sign in again",
+  );
+  await expect(app.locator(".connection-dot.connected")).toHaveCount(0);
+  await app
+    .getByRole("button", { name: "Agent settings", exact: true })
+    .click();
+  await expect(
+    app.getByRole("button", { name: /I trust this app/ }),
+  ).toBeVisible();
+});
