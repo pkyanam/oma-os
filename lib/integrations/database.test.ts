@@ -62,3 +62,26 @@ test("real PGlite executes the demo, imports safely, and restores a checkpoint",
     await db.close();
   }
 });
+
+test("malformed drawing elements and remote image references fail before replacing a scene", () => {
+  const scene = newDrawing();
+  for (const elements of [
+    [null],
+    [{ id: "bad", type: "rectangle", x: "not a coordinate" }],
+    [{ id: "bad", type: "line", points: [null] }],
+    [{ id: "bad", type: "text", text: 42 }],
+  ])
+    assert.throws(() => parseDrawing(JSON.stringify({ ...scene, elements })));
+  assert.throws(() =>
+    parseDrawing(
+      JSON.stringify({
+        ...scene,
+        files: {
+          remote: { id: "remote", dataURL: "https://example.com/image.png" },
+        },
+      }),
+    ),
+  );
+  assert.throws(() => parseDrawing(JSON.stringify({ ...scene, appState: [] })));
+  assert.throws(() => parseDrawing(" ".repeat(25_000_001)));
+});

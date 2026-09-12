@@ -9,7 +9,12 @@ import {
   FileCode,
   RefreshCw,
 } from "lucide-react";
-import { fs, errorMessage } from "@/lib/fs/opfs";
+import {
+  fs,
+  errorMessage,
+  fingerprintBlob,
+  type BlobFingerprint,
+} from "@/lib/fs/opfs";
 import { useDesktop } from "@/lib/state/store";
 import {
   DATABASE_PATH,
@@ -26,6 +31,7 @@ type Reply = {
   ok: boolean;
   error?: string;
   snapshot?: Blob;
+  inTransaction?: boolean;
   tables?: string[];
   results?: SQLResult[];
 };
@@ -41,6 +47,7 @@ export default function Database({
   const fsVersion = useDesktop((s) => s.fsVersion);
   const [sql, setSQL] = useState(SQL_DEMO),
     [ready, setReady] = useState(false),
+    [scriptReady, setScriptReady] = useState(false),
     [busy, setBusy] = useState(false),
     [status, setStatus] = useState("Starting PostgreSQL…"),
     [error, setError] = useState(""),
@@ -53,7 +60,8 @@ export default function Database({
     [showImport, setShowImport] = useState(false),
     [generation, setGeneration] = useState(0),
     [elapsed, setElapsed] = useState(0),
-    [unsavedCheckpoint, setUnsavedCheckpoint] = useState(false);
+    [unsavedCheckpoint, setUnsavedCheckpoint] = useState(false),
+    [transactionOpen, setTransactionOpen] = useState(false);
   const worker = useRef<Worker | null>(null),
     sequence = useRef(0),
     pending = useRef(
@@ -74,7 +82,9 @@ export default function Database({
     queue = useRef(Promise.resolve()),
     alive = useRef(true),
     operation = useRef(false),
-    checkpoint = useRef<Blob | null>(null);
+    checkpoint = useRef<Blob | null>(null),
+    checkpointDisk = useRef<BlobFingerprint | undefined>(undefined),
+    transaction = useRef(false);
   const request = useCallback(
     (body: Record<string, unknown>, timeout = 35000) =>
       new Promise<Reply>((resolve, reject) => {
@@ -104,6 +114,10 @@ export default function Database({
       .catch(() => {})
       .then(async () => {
         if (!dirty.current) return;
+        if (disk.current === undefined)
+          throw new Error(
+            "The SQL file has not loaded. Your buffer is preserved.",
+          );
         const text = latest.current;
         await fs.write(path, text, disk.current);
         disk.current = text;
@@ -112,7 +126,10 @@ export default function Database({
           .getState()
           .setDirty(
             id,
-            dirty.current || operation.current || !!checkpoint.current,
+            dirty.current ||
+              operation.current ||
+              !!checkpoint.current ||
+              transaction.current,
           );
         useDesktop.getState().refreshFs();
       });
@@ -121,20 +138,33 @@ export default function Database({
   useEffect(() => {
     let cancelled = false;
     alive.current = true;
+    setScriptReady(false);
     void (async () => {
       try {
         await fs.mkdir(path.slice(0, path.lastIndexOf("/")));
         if (await fs.exists(path)) {
-          const text = await fs.read(path);
+          const file = await fs.readBlob(path);
+          if (file.size > 2_000_000)
+            throw new Error(
+              "SQL file limit is 2 MB. The original file is preserved.",
+            );
+          const text = await file.text();
           if (cancelled) return;
           disk.current = text;
           latest.current = text;
           setSQL(text);
         } else {
-          await fs.writeBlob(path, new Blob([SQL_DEMO]), { overwrite: false });
+          await fs.writeBlob(path, new Blob([SQL_DEMO]), {
+            overwrite: false,
+            guard: () => {
+              if (cancelled) throw new Error("Cancelled SQL initialization");
+            },
+          });
+          if (cancelled) return;
           disk.current = SQL_DEMO;
           useDesktop.getState().refreshFs();
         }
+        if (!cancelled) setScriptReady(true);
       } catch (e) {
         if (!cancelled) setError(errorMessage(e));
       }
@@ -146,10 +176,17 @@ export default function Database({
     };
   }, [path, saveScript]);
   useEffect(() => {
-    if (dirty.current || disk.current === undefined) return;
+    if (!scriptReady || dirty.current || disk.current === undefined) return;
     let cancelled = false;
     void fs
-      .read(path)
+      .readBlob(path)
+      .then((file) => {
+        if (file.size > 2_000_000)
+          throw new Error(
+            "SQL file limit is 2 MB. The original file is preserved.",
+          );
+        return file.text();
+      })
       .then((text) => {
         if (cancelled || dirty.current || text === disk.current) return;
         disk.current = text;
@@ -162,7 +199,7 @@ export default function Database({
     return () => {
       cancelled = true;
     };
-  }, [fsVersion, path]);
+  }, [fsVersion, path, scriptReady]);
   useEffect(() => {
     if (!dirty.current) return;
     const timer = setTimeout(
@@ -173,11 +210,24 @@ export default function Database({
   }, [sql, saveScript]);
   useEffect(() => {
     const leave = (e: BeforeUnloadEvent) => {
-      if (dirty.current || operation.current || !!checkpoint.current)
+      if (
+        dirty.current ||
+        operation.current ||
+        !!checkpoint.current ||
+        transaction.current
+      )
         e.preventDefault();
     };
     window.addEventListener("beforeunload", leave);
     return () => window.removeEventListener("beforeunload", leave);
+  }, []);
+  const saveCheckpoint = useCallback(async (blob: Blob, guard?: () => void) => {
+    const expected = checkpointDisk.current;
+    await fs.writeBlob(DATABASE_PATH, blob, {
+      ...(expected ? { expected } : { overwrite: false }),
+      guard,
+    });
+    checkpointDisk.current = await fingerprintBlob(blob);
   }, []);
   useEffect(() => {
     let cancelled = false;
@@ -212,13 +262,27 @@ export default function Database({
         const snapshot = (await fs.exists(DATABASE_PATH))
           ? await fs.readBlob(DATABASE_PATH)
           : undefined;
+        if (snapshot && snapshot.size > 64_000_000)
+          throw new Error(
+            "Database checkpoint limit is 64 MB. The file was not changed.",
+          );
+        checkpointDisk.current = snapshot
+          ? await fingerprintBlob(snapshot)
+          : undefined;
+        if (cancelled) return;
         await request({ kind: "init", snapshot }, 120000);
         const data = await request({
           kind: "query",
           sql: "SELECT version() AS postgres_version",
         });
         if (cancelled) return;
-        if (data.snapshot) await fs.writeBlob(DATABASE_PATH, data.snapshot);
+        if (data.snapshot)
+          await saveCheckpoint(data.snapshot, () => {
+            if (cancelled) throw new Error("Cancelled database initialization");
+          });
+        if (cancelled) return;
+        transaction.current = false;
+        setTransactionOpen(false);
         setTables(data.tables || []);
         setReady(true);
         setStatus("Ready · saved locally");
@@ -269,9 +333,10 @@ export default function Database({
       pending.current.clear();
       release?.();
     };
-  }, [generation, request]);
+  }, [generation, request, saveCheckpoint]);
   const execute = async (body: Record<string, unknown>, query?: string) => {
-    if (!ready || operation.current) return;
+    if (!ready || !scriptReady || operation.current || checkpoint.current)
+      return false;
     operation.current = true;
     setBusy(true);
     setError("");
@@ -281,32 +346,48 @@ export default function Database({
     try {
       await saveScript();
       const reply = await request(body);
+      transaction.current = !!reply.inTransaction;
+      setTransactionOpen(transaction.current);
       if (reply.snapshot) {
         checkpoint.current = reply.snapshot;
         setUnsavedCheckpoint(true);
         setStatus("Saving checkpoint…");
-        await fs.writeBlob(DATABASE_PATH, reply.snapshot);
+        await saveCheckpoint(reply.snapshot, () => {
+          if (!alive.current)
+            throw new Error("Database window closed before checkpoint save");
+        });
         checkpoint.current = null;
         setUnsavedCheckpoint(false);
         useDesktop.getState().refreshFs();
       }
       setResults(reply.results || []);
       setResultIndex(Math.max(0, (reply.results?.length || 1) - 1));
-      setTables(reply.tables || []);
+      if (reply.tables) setTables(reply.tables);
       setElapsed(Math.round(performance.now() - start));
       if (reply.error) throw new Error(reply.error);
       if (query)
         setHistory((h) =>
           [query, ...h.filter((q) => q !== query)].slice(0, 30),
         );
-      setStatus("Ready · saved locally");
+      setStatus(
+        transaction.current
+          ? "Transaction open · COMMIT to save or ROLLBACK"
+          : "Ready · saved locally",
+      );
+      return true;
     } catch (e) {
       setError(errorMessage(e));
       setStatus("Operation failed");
+      return false;
     } finally {
       operation.current = false;
       if (alive.current) setBusy(false);
-      useDesktop.getState().setDirty(id, dirty.current || !!checkpoint.current);
+      useDesktop
+        .getState()
+        .setDirty(
+          id,
+          dirty.current || !!checkpoint.current || transaction.current,
+        );
     }
   };
   const run = () => {
@@ -321,10 +402,6 @@ export default function Database({
       const payload = csvImport(source, name);
       setShowImport(false);
       await execute({ kind: "import", ...payload });
-      setSQL(`SELECT * FROM ${sqlIdentifier(payload.name)} LIMIT 1000;`);
-      latest.current = `SELECT * FROM ${sqlIdentifier(payload.name)} LIMIT 1000;`;
-      dirty.current = true;
-      useDesktop.getState().setDirty(id, true);
     } catch (e) {
       setError(errorMessage(e));
     }
@@ -342,6 +419,8 @@ export default function Database({
       );
     }
     pending.current.clear();
+    transaction.current = false;
+    setTransactionOpen(false);
     setReady(false);
     setStatus("Stopped");
   };
@@ -349,7 +428,9 @@ export default function Database({
     if (!selected) return;
     try {
       const target = `/home/guest/Documents/Query-${Date.now()}.csv`;
-      await fs.write(target, resultCSV(selected));
+      await fs.writeBlob(target, new Blob([resultCSV(selected)]), {
+        overwrite: false,
+      });
       useDesktop.getState().refreshFs();
       setStatus("Results saved to " + target.split("/").pop());
     } catch (e) {
@@ -365,7 +446,11 @@ export default function Database({
           e.preventDefault();
           run();
         }
-        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+        if (
+          scriptReady &&
+          (e.metaKey || e.ctrlKey) &&
+          e.key.toLowerCase() === "s"
+        ) {
           e.preventDefault();
           void saveScript()
             .then(() => setStatus("SQL saved locally"))
@@ -381,30 +466,83 @@ export default function Database({
         <span className="integration-path" title={path}>
           {path.split("/").pop()}
         </span>
+        <button
+          disabled={!scriptReady}
+          onClick={() => {
+            const blob = new Blob([latest.current], {
+                type: "application/sql",
+              }),
+              url = URL.createObjectURL(blob),
+              link = document.createElement("a");
+            link.href = url;
+            link.download = path.split("/").pop() || "query.sql";
+            link.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+          }}
+        >
+          <Download size={14} />
+          Export SQL
+        </button>
         {unsavedCheckpoint && (
           <button
+            disabled={busy}
             onClick={() => {
-              if (checkpoint.current)
-                void fs
-                  .writeBlob(DATABASE_PATH, checkpoint.current)
-                  .then(() => {
+              const snapshot = checkpoint.current;
+              if (!snapshot || operation.current) return;
+              operation.current = true;
+              setBusy(true);
+              void saveCheckpoint(snapshot, () => {
+                if (!alive.current) throw new Error("Database window closed");
+              })
+                .then(() => {
+                  if (checkpoint.current === snapshot) {
                     checkpoint.current = null;
                     setUnsavedCheckpoint(false);
-                    setError("");
-                    setStatus("Checkpoint saved locally");
-                    useDesktop
-                      .getState()
-                      .setDirty(id, dirty.current || operation.current);
-                    useDesktop.getState().refreshFs();
-                  })
-                  .catch((e) => setError(errorMessage(e)));
+                  }
+                  setError("");
+                  setStatus("Checkpoint saved locally");
+                  useDesktop.getState().refreshFs();
+                })
+                .catch((e) => setError(errorMessage(e)))
+                .finally(() => {
+                  operation.current = false;
+                  if (alive.current) setBusy(false);
+                  useDesktop
+                    .getState()
+                    .setDirty(
+                      id,
+                      dirty.current ||
+                        !!checkpoint.current ||
+                        transaction.current,
+                    );
+                });
             }}
           >
             Retry checkpoint save
           </button>
         )}
+        {unsavedCheckpoint && (
+          <button
+            onClick={() => {
+              const snapshot = checkpoint.current;
+              if (!snapshot) return;
+              const url = URL.createObjectURL(snapshot),
+                link = document.createElement("a");
+              link.href = url;
+              link.download = "Workbench-recovery.pglite.tar.gz";
+              link.click();
+              setTimeout(() => URL.revokeObjectURL(url), 1000);
+            }}
+          >
+            Export recovery
+          </button>
+        )}
         {ready ? (
-          <button className="integration-primary" disabled={busy} onClick={run}>
+          <button
+            className="integration-primary"
+            disabled={busy || !scriptReady || unsavedCheckpoint}
+            onClick={run}
+          >
             <Play size={14} />
             Run SQL
           </button>
@@ -420,6 +558,26 @@ export default function Database({
             Reconnect
           </button>
         )}
+        {transactionOpen && ready && (
+          <>
+            <button
+              disabled={busy}
+              onClick={() =>
+                void execute({ kind: "query", sql: "COMMIT" }, "COMMIT")
+              }
+            >
+              Commit
+            </button>
+            <button
+              disabled={busy}
+              onClick={() =>
+                void execute({ kind: "query", sql: "ROLLBACK" }, "ROLLBACK")
+              }
+            >
+              Rollback
+            </button>
+          </>
+        )}
         {busy && (
           <button onClick={stop}>
             <Square size={14} />
@@ -427,7 +585,13 @@ export default function Database({
           </button>
         )}
         <button
-          disabled={!ready || busy}
+          disabled={
+            !ready ||
+            !scriptReady ||
+            busy ||
+            unsavedCheckpoint ||
+            transactionOpen
+          }
           onClick={() => setShowImport((v) => !v)}
         >
           <Upload size={14} />
@@ -509,13 +673,11 @@ export default function Database({
               tables.map((name) => (
                 <button
                   key={name}
-                  title={name}
+                  title={"Preview table " + name}
+                  disabled={!ready || busy || unsavedCheckpoint}
                   onClick={() => {
                     const text = `SELECT * FROM ${sqlIdentifier(name)} LIMIT 1000;`;
-                    setSQL(text);
-                    latest.current = text;
-                    dirty.current = true;
-                    useDesktop.getState().setDirty(id, true);
+                    void execute({ kind: "query", sql: text }, text);
                   }}
                 >
                   <DatabaseIcon size={13} />
@@ -562,8 +724,15 @@ export default function Database({
             aria-label="SQL editor"
             className="database-editor"
             spellCheck={false}
+            disabled={!scriptReady}
             value={sql}
             onChange={(e) => {
+              if (e.target.value.length > 2_000_000) {
+                setError(
+                  "SQL file limit is 2 MB. Your previous script is preserved.",
+                );
+                return;
+              }
               latest.current = e.target.value;
               setSQL(e.target.value);
               dirty.current = true;

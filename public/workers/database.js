@@ -21,6 +21,10 @@ self.onmessage = async ({ data }) => {
       if (kind === "query")
         results = await db.exec(data.sql, { rowMode: "array" });
       else if (kind === "import") {
+        if (db.isInTransaction())
+          throw new Error(
+            "Commit or roll back the open transaction before importing CSV.",
+          );
         const { name, headers, rows } = data;
         if (
           typeof name !== "string" ||
@@ -50,6 +54,20 @@ self.onmessage = async ({ data }) => {
     } catch (e) {
       error = e instanceof Error ? e.message : String(e);
     }
+    if (db.isInTransaction()) {
+      self.postMessage({
+        id,
+        ok: true,
+        error,
+        inTransaction: true,
+        results: results.map((r) => ({
+          ...r,
+          totalRows: r.rows.length,
+          rows: r.rows.slice(0, 1000),
+        })),
+      });
+      return;
+    }
     const tables = (
       await db.query(
         "SELECT table_name FROM information_schema.tables WHERE table_schema='public' ORDER BY table_name",
@@ -61,6 +79,7 @@ self.onmessage = async ({ data }) => {
       id,
       ok: true,
       error,
+      inTransaction: false,
       tables,
       snapshot,
       results: results.map((r) => ({

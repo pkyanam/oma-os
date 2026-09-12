@@ -215,3 +215,147 @@ test.describe("touch integrations", () => {
     ).toBe(true);
   });
 });
+
+test("failed and oversized CSV imports preserve the current SQL script", async ({
+  page,
+}) => {
+  test.setTimeout(120000);
+  await boot(page);
+  await page.keyboard.press("Alt+2");
+  const app = await launch(page, "SQL Workbench");
+  await expect(
+    app.getByText("Ready · saved locally", { exact: true }),
+  ).toBeVisible({ timeout: 90000 });
+  const file = {
+    name: "duplicate.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("name\nalpha"),
+  };
+  await app.getByRole("button", { name: "Import CSV", exact: true }).click();
+  await app.locator("input[type=file]").setInputFiles(file);
+  await expect(
+    app.getByRole("cell", { name: "alpha", exact: true }),
+  ).toBeVisible({ timeout: 30000 });
+  const editor = app.getByRole("textbox", { name: "SQL editor", exact: true });
+  await editor.fill("SELECT 1234 AS preserve_this_script;");
+  await app.getByRole("button", { name: "Import CSV", exact: true }).click();
+  await app.locator("input[type=file]").setInputFiles(file);
+  await expect(app.getByRole("alert")).toContainText("already exists");
+  await expect(editor).toHaveValue("SELECT 1234 AS preserve_this_script;");
+  await app.locator("input[type=file]").setInputFiles({
+    name: "too-large.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.alloc(2_000_001, 65),
+  });
+  await expect(app.getByRole("alert")).toContainText("CSV limit");
+  await expect(editor).toHaveValue("SELECT 1234 AS preserve_this_script;");
+});
+
+test("database detects external checkpoint replacement and exports recovery without overwriting it", async ({
+  page,
+}) => {
+  test.setTimeout(120000);
+  await boot(page);
+  await page.keyboard.press("Alt+2");
+  const app = await launch(page, "SQL Workbench");
+  await expect(
+    app.getByText("Ready · saved locally", { exact: true }),
+  ).toBeVisible({ timeout: 90000 });
+  await app.getByRole("button", { name: "Run SQL", exact: true }).click();
+  await expect(
+    app.getByRole("cell", { name: "Engineering", exact: true }),
+  ).toBeVisible({ timeout: 30000 });
+  await expect(
+    app.getByText("Ready · saved locally", { exact: true }),
+  ).toBeVisible();
+  const external = await page.evaluate(async () => {
+    let dir = await navigator.storage.getDirectory();
+    for (const name of ["home", "guest", "Documents"])
+      dir = await dir.getDirectoryHandle(name);
+    const handle = await dir.getFileHandle("Workbench.pglite.tar.gz");
+    const bytes = new Uint8Array(await (await handle.getFile()).arrayBuffer());
+    bytes[0] ^= 255;
+    const output = await handle.createWritable();
+    await output.write(bytes);
+    await output.close();
+    return { size: bytes.length, first: bytes[0] };
+  });
+  await app
+    .getByRole("textbox", { name: "SQL editor", exact: true })
+    .fill("SELECT 42 AS answer");
+  await app.getByRole("button", { name: "Run SQL", exact: true }).click();
+  await expect(
+    app.getByRole("button", { name: "Export recovery", exact: true }),
+  ).toBeVisible({ timeout: 30000 });
+  await expect(app.getByRole("alert")).toContainText("changed");
+  expect(
+    await page.evaluate(async () => {
+      let dir = await navigator.storage.getDirectory();
+      for (const name of ["home", "guest", "Documents"])
+        dir = await dir.getDirectoryHandle(name);
+      const bytes = new Uint8Array(
+        await (
+          await (await dir.getFileHandle("Workbench.pglite.tar.gz")).getFile()
+        ).arrayBuffer(),
+      );
+      return { size: bytes.length, first: bytes[0] };
+    }),
+  ).toEqual(external);
+  const downloadPromise = page.waitForEvent("download");
+  await app
+    .getByRole("button", { name: "Export recovery", exact: true })
+    .click();
+  const download = await downloadPromise;
+  const { readFile } = await import("node:fs/promises");
+  const bytes = await readFile((await download.path())!);
+  expect(bytes[0]).toBe(31);
+  expect(bytes[1]).toBe(139);
+  await expect(
+    app.getByRole("button", { name: "Run SQL", exact: true }),
+  ).toBeDisabled();
+});
+
+test("open SQL transactions remain explicitly unsaved until commit", async ({
+  page,
+}) => {
+  test.setTimeout(120000);
+  await boot(page);
+  await page.keyboard.press("Alt+2");
+  const app = await launch(page, "SQL Workbench");
+  await expect(
+    app.getByText("Ready · saved locally", { exact: true }),
+  ).toBeVisible({ timeout: 90000 });
+  await app
+    .getByRole("textbox", { name: "SQL editor", exact: true })
+    .fill(
+      "BEGIN; CREATE TABLE transaction_test (x int); INSERT INTO transaction_test VALUES (99);",
+    );
+  await app.getByRole("button", { name: "Run SQL", exact: true }).click();
+  await expect(
+    app.getByText("Transaction open · COMMIT to save or ROLLBACK", {
+      exact: true,
+    }),
+  ).toBeVisible({ timeout: 30000 });
+  await expect(
+    app.getByRole("button", { name: "Commit", exact: true }),
+  ).toBeVisible();
+  await app.getByRole("button", { name: "Commit", exact: true }).click();
+  await expect(
+    app.getByText("Ready · saved locally", { exact: true }),
+  ).toBeVisible({ timeout: 30000 });
+  await page.reload();
+  const restored = page.getByRole("region", {
+    name: "SQL Workbench window",
+    exact: true,
+  });
+  await expect(
+    restored.getByText("Ready · saved locally", { exact: true }),
+  ).toBeVisible({ timeout: 90000 });
+  await restored
+    .getByRole("textbox", { name: "SQL editor", exact: true })
+    .fill("SELECT x FROM transaction_test");
+  await restored.getByRole("button", { name: "Run SQL", exact: true }).click();
+  await expect(
+    restored.getByRole("cell", { name: "99", exact: true }),
+  ).toBeVisible({ timeout: 30000 });
+});

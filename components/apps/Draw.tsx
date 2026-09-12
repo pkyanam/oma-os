@@ -41,8 +41,15 @@ export default function Draw({
   const doc = useDocument(id, path, newDrawing, parseDrawing),
     api = useRef<ExcalidrawImperativeAPI | null>(null),
     previous = useRef(""),
-    upload = useRef<HTMLInputElement>(null);
+    upload = useRef<HTMLInputElement>(null),
+    importRevision = useRef(0);
   const [error, setError] = useState("");
+  useEffect(
+    () => () => {
+      importRevision.current++;
+    },
+    [],
+  );
   useEffect(() => {
     const raw = JSON.stringify(doc.value);
     if (api.current && raw !== previous.current) {
@@ -171,11 +178,24 @@ export default function Draw({
           const file = e.target.files?.[0];
           e.target.value = "";
           if (!file) return;
+          const revision = ++importRevision.current;
           try {
             if (file.size > 25_000_000)
               throw new Error("Drawing limit is 25 MB.");
             const next = parseDrawing(await file.text());
-            doc.update(next);
+            if (revision !== importRevision.current) return;
+            // Validate through the upstream normalizer before replacing the saved scene.
+            const normalized = restore(
+              next,
+              api.current?.getAppState(),
+              api.current?.getSceneElements(),
+            );
+            doc.update({
+              ...next,
+              elements: normalized.elements,
+              appState: normalized.appState,
+              files: normalized.files,
+            });
             setError("");
           } catch (err) {
             setError(String(err));
