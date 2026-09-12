@@ -122,7 +122,7 @@ export default function Canvas({
     [color, setColor] = useState(colors[0]),
     [selected, setSelected] = useState<string | null>(null),
     [draft, setDraft] = useState<Shape | null>(null),
-    [text, setText] = useState("Your idea"),
+    [text, setText] = useState("Text"),
     [view, setView] = useState({ x: 0, y: 0, w: 1200, h: 800 }),
     [error, setError] = useState(""),
     [exportMenu, setExportMenu] = useState(false);
@@ -700,8 +700,8 @@ export default function Canvas({
         {!doc.value.shapes.length && !draft && (
           <div className="canvas-welcome">
             <Square size={28} />
-            <strong>Make room for an idea.</strong>
-            <span>Sketch a system. Map a journey. Think on a page.</span>
+            <strong>Empty canvas</strong>
+            <span>Choose a tool, then drag to draw.</span>
             <button
               onClick={() => {
                 const shapes: Shape[] = [
@@ -724,7 +724,7 @@ export default function Canvas({
                     w: 0,
                     h: 0,
                     color: colors[0],
-                    text: "An idea",
+                    text: "Input",
                     points: [],
                   },
                   {
@@ -757,7 +757,7 @@ export default function Canvas({
                     w: 0,
                     h: 0,
                     color: colors[1],
-                    text: "A plan",
+                    text: "Output",
                     points: [],
                   },
                 ];
@@ -765,7 +765,7 @@ export default function Canvas({
               }}
               disabled={!doc.ready}
             >
-              Start with a diagram
+              Insert example diagram
             </button>
           </div>
         )}

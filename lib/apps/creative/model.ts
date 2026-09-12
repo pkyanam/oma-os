@@ -12,8 +12,8 @@ export const welcomeNotebook = (): Notebook => ({
   notes: [
     {
       id: "welcome",
-      title: "A place to think",
-      body: "# Your working notebook\n\nCapture an idea, outline a project, or keep a daily journal.\n\n- [ ] Write something worth remembering\n- [ ] Try the Markdown preview\n- [ ] Export a note as a portable .md file\n\nEverything saves to your browser filesystem. No account required.\n\n## A few shortcuts\n\nUse the toolbar for a fresh note, a daily page, or a project brief. Search looks through titles and text. Pin a note to keep it nearby.\n",
+      title: "Getting started",
+      body: "# Notes\n\nWrite Markdown and select Preview to read it.\n\n- [ ] Create a note with the + button\n- [ ] Open a daily page from the calendar button\n- [ ] Export a note as Markdown\n\nNotes save automatically. Export a backup in Settings to keep a copy outside this browser.\n",
       updated: Date.now(),
       pinned: true,
       archived: false,

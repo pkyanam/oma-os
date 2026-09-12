@@ -32,6 +32,7 @@ import {
   visitPage,
 } from "@/lib/browser/library";
 import "./browser.css";
+import CloudBrowser from "./CloudBrowser";
 import RemoteBrowser, { RemoteBrowserHandle } from "./RemoteBrowser";
 type Tab = { id: string; initial: string; title: string };
 export default function Browser({
@@ -68,10 +69,14 @@ export default function Browser({
     } catch {}
   }, [id, tabs, selected]);
   const [runtime, setRuntime] = useState(false);
+  const [cloudRuntime, setCloudRuntime] = useState(false);
   useEffect(() => {
     void fetch("/api/browser-runtime?capabilities=1")
       .then((r) => (r.ok ? r.json() : null))
-      .then((data) => setRuntime(data?.available === true))
+      .then((data) => {
+        setRuntime(data?.available === true);
+        setCloudRuntime(data?.transport === "live-view");
+      })
       .catch(() => {});
   }, []);
   const [library, setLibrary] = useState<BrowserLibrary>({
@@ -138,7 +143,9 @@ export default function Browser({
   return (
     <div
       className="oma-browser"
-      data-runtime={runtime ? "chromium" : "document"}
+      data-runtime={
+        cloudRuntime ? "cloudflare" : runtime ? "chromium" : "document"
+      }
     >
       <div className="browser-tabs" role="tablist" aria-label="Browser tabs">
         {tabs.map((tab) => (
@@ -203,6 +210,7 @@ export default function Browser({
             <BrowserPane
               id={id}
               runtime={runtime}
+              cloudRuntime={cloudRuntime}
               path={tab.initial}
               active={active && selected === tab.id}
               library={library}
@@ -237,6 +245,7 @@ export default function Browser({
 }
 function BrowserPane({
   runtime,
+  cloudRuntime,
   id,
   path,
   active,
@@ -255,6 +264,7 @@ function BrowserPane({
   onTitle: (title: string) => void;
   onAddress: (url: string) => void;
   runtime: boolean;
+  cloudRuntime: boolean;
 }) {
   const [history, setHistory] = useState(() => {
       try {
@@ -274,9 +284,10 @@ function BrowserPane({
     [filter, setFilter] = useState(""),
     [notice, setNotice] = useState("");
   const [chosenMode, setWebMode] = useState<
-    "document" | "live" | "remote" | null
+    "document" | "live" | "remote" | "cloud" | null
   >(null);
-  const webMode = chosenMode || (runtime ? "remote" : "document");
+  const webMode =
+    chosenMode || (cloudRuntime ? "cloud" : runtime ? "remote" : "document");
   const remote = useRef<RemoteBrowserHandle>(null);
   const [remoteLocation, setRemoteLocation] = useState("");
   const address = useRef<HTMLInputElement>(null),
@@ -287,8 +298,11 @@ function BrowserPane({
     start = url === "oma:start",
     version = useDesktop((s) => s.fsVersion);
   const currentURL =
-    webMode === "remote" && !local && !start ? remoteLocation || url : url;
-  const isRemote = !local && !start && webMode === "remote";
+    (webMode === "remote" || webMode === "cloud") && !local && !start
+      ? remoteLocation || url
+      : url;
+  const isRemote =
+    !local && !start && (webMode === "remote" || webMode === "cloud");
   const bookmarked = library.bookmarks.some(
     (entry) => entry.url === currentURL,
   );
@@ -620,11 +634,13 @@ function BrowserPane({
                   value={webMode}
                   onChange={(event) =>
                     setWebMode(
-                      event.target.value as "remote" | "document" | "live",
+                      event.target.value as
+                        "remote" | "cloud" | "document" | "live",
                     )
                   }
                 >
-                  <option value="remote" disabled={!runtime}>
+                  {cloudRuntime && <option value="cloud">Cloudflare</option>}
+                  <option value="remote" disabled={!runtime || cloudRuntime}>
                     Chromium
                   </option>
                   <option value="document">Document</option>
@@ -820,6 +836,19 @@ function BrowserPane({
                 </span>
               </div>
             </div>
+          ) : webMode === "cloud" && !local ? (
+            <CloudBrowser
+              ref={remote}
+              url={url}
+              active={active}
+              onLocation={(next, title) => {
+                setRemoteLocation(next);
+                onAddress(next);
+                if (document.activeElement !== address.current) setInput(next);
+                setLoading(false);
+                onTitle(title || pageLabel(next));
+              }}
+            />
           ) : webMode === "remote" && !local ? (
             <RemoteBrowser
               ref={remote}
@@ -877,20 +906,24 @@ function BrowserPane({
               ? "Loading…"
               : local
                 ? "Local app · isolated"
-                : webMode === "remote"
-                  ? "Chromium · isolated session"
-                  : webMode === "document"
-                    ? "Document · public page"
-                    : "Live · embedded site"}
+                : webMode === "cloud"
+                  ? "Cloudflare · private browser session"
+                  : webMode === "remote"
+                    ? "Chromium · isolated session"
+                    : webMode === "document"
+                      ? "Document · public page"
+                      : "Live · embedded site"}
         </span>
         <span>
           {local
             ? "Source → save → reload"
-            : webMode === "remote"
-              ? "Rendered by a real browser"
-              : webMode === "document"
-                ? "Links stay here · sign-in unavailable"
-                : "Sites control embedding support"}
+            : webMode === "cloud"
+              ? "Rendered on Cloudflare · native live view"
+              : webMode === "remote"
+                ? "Rendered by a real browser"
+                : webMode === "document"
+                  ? "Links stay here · sign-in unavailable"
+                  : "Sites control embedding support"}
         </span>
       </div>
     </div>

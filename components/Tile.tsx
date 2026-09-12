@@ -1,23 +1,22 @@
 "use client";
-import dynamic from "next/dynamic";
-import { Component, type CSSProperties, type ReactNode } from "react";
+import { Component, Suspense, lazy, type CSSProperties, type ReactNode } from "react";
 import { useDesktop, type Tile as TileState } from "@/lib/state/store";
-const Terminal = dynamic(() => import("./apps/Terminal"), { ssr: false });
-const Editor = dynamic(() => import("./apps/Editor"), { ssr: false });
-const Files = dynamic(() => import("./apps/Files"), { ssr: false });
-const Browser = dynamic(() => import("./apps/Browser"), { ssr: false });
-const Agent = dynamic(() => import("./apps/Agent"), { ssr: false });
-const Notes = dynamic(() => import('./apps/Notes'), { ssr: false });
-const Canvas = dynamic(() => import('./apps/Canvas'), { ssr: false });
-const Lab = dynamic(() => import('./apps/Lab'), { ssr: false });
-const Data = dynamic(() => import('./apps/Data'), { ssr: false });
-const Media = dynamic(() => import('./apps/Media'), { ssr: false });
-const Tasks = dynamic(() => import('./apps/Tasks'), { ssr: false });
-const Settings = dynamic(() => import('./apps/Settings'), { ssr: false });
-const Applications = dynamic(() => import('./apps/Applications'), { ssr: false });
-const Draw = dynamic(() => import('./apps/Draw'), { ssr: false });
-const Database = dynamic(() => import('./apps/Database'), { ssr: false });
-const Activity = dynamic(() => import('./apps/Activity'), { ssr: false });
+const Terminal = lazy(() => import("./apps/Terminal"));
+const Editor = lazy(() => import("./apps/Editor"));
+const Files = lazy(() => import("./apps/Files"));
+const Browser = lazy(() => import("./apps/Browser"));
+const Agent = lazy(() => import("./apps/Agent"));
+const Notes = lazy(() => import('./apps/Notes'));
+const Canvas = lazy(() => import('./apps/Canvas'));
+const Lab = lazy(() => import('./apps/Lab'));
+const Data = lazy(() => import('./apps/Data'));
+const Media = lazy(() => import('./apps/Media'));
+const Tasks = lazy(() => import('./apps/Tasks'));
+const Settings = lazy(() => import('./apps/Settings'));
+const Applications = lazy(() => import('./apps/Applications'));
+const Draw = lazy(() => import('./apps/Draw'));
+const Database = lazy(() => import('./apps/Database'));
+const Activity = lazy(() => import('./apps/Activity'));
 class ClientBoundary extends Component<
   { children: ReactNode },
   { error: boolean }
@@ -62,7 +61,7 @@ export default function Tile({
       onPointerDownCapture={() => useDesktop.getState().focus(id)}
       onFocusCapture={() => useDesktop.getState().focus(id)}
     >
-      <ClientBoundary>
+      <ClientBoundary><Suspense fallback={<div className="loading-client">Opening…</div>}>
         {tile.app === "term" ? (
           <Terminal id={id} active={active} />
         ) : tile.app === "editor" ? (
@@ -100,7 +99,7 @@ export default function Tile({
         ) : tile.app === 'activity' ? (
           <Activity/>
         ) : null}
-      </ClientBoundary>
+      </Suspense></ClientBoundary>
     </section>
   );
 }

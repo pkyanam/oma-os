@@ -1,0 +1,22 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "lib": [
+      "ESNext",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "types": [
+      "@cloudflare/workers-types",
+      "node"
+    ],
+    "incremental": false
+  },
+  "include": [
+    "./**/*.ts",
+    "../companions/cloudflare-app/src/**/*.ts"
+  ],
+  "exclude": [
+    "../node_modules"
+  ]
+}

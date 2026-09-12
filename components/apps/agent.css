@@ -275,3 +275,5 @@
     font-size: 16px;
   }
 }
+.agent-settings .connection-tabs{flex-wrap:wrap;gap:2px}
+.agent-settings .connection-tabs button{flex:1;min-width:110px;min-height:40px}

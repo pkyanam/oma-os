@@ -1,5 +1,9 @@
 import { expect, type Page, type Locator } from "@playwright/test";
-export async function boot(page: Page, url = "/") {
+export async function boot(
+  page: Page,
+  url = "/",
+  options: { workspace?: "tools" | "applications" } = {},
+) {
   const rate = Number(process.env.OMA_E2E_CPU_RATE);
   if (Number.isFinite(rate) && rate > 1) {
     const session = await page.context().newCDPSession(page);
@@ -12,6 +16,15 @@ export async function boot(page: Page, url = "/") {
   await expect(
     page.getByRole("dialog", { name: "Welcome to oma.os" }),
   ).toHaveCount(0);
+  if (options.workspace !== "applications") {
+    // Tests that exercise tools explicitly create their workspace through UI.
+    // Real first boot stays lightweight and opens only Applications.
+    await page.keyboard.press("Alt+q");
+    await launch(page, "Terminal");
+    await launch(page, "Editor");
+    await launch(page, "Files");
+    await page.keyboard.press("Alt+ArrowLeft");
+  }
 }
 export async function launch(page: Page, title: string) {
   await page.keyboard.press("Control+Space");

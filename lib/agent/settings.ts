@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 export type AgentConfig = {
-  mode: "chatgpt" | "direct";
+  mode: "chatgpt" | "direct" | "workers-ai";
   baseURL: string;
   apiKey: string;
   model: string;
@@ -15,7 +15,11 @@ export function publicPreferences(
   const result: Partial<
     Pick<AgentConfig, "mode" | "baseURL" | "model" | "tools">
   > = {};
-  if (input.mode === "chatgpt" || input.mode === "direct")
+  if (
+    input.mode === "chatgpt" ||
+    input.mode === "direct" ||
+    input.mode === "workers-ai"
+  )
     result.mode = input.mode;
   if (typeof input.baseURL === "string") {
     try {

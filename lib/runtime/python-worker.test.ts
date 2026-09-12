@@ -10,12 +10,13 @@ function harness() {
   const output: Record<string, unknown>[] = [];
   let read: (event: unknown) => void = () => {};
   const self = {
+    location: { origin: "https://oma.example" },
     postMessage: (value: Record<string, unknown>) => output.push(value),
     addEventListener: (_type: string, callback: typeof read) => {
       read = callback;
     },
   };
-  const context = createContext({ self });
+  const context = createContext({ self, URL });
   new Script(source).runInContext(context);
   return {
     output,

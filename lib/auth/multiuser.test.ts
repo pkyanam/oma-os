@@ -109,8 +109,10 @@ test("independent device logins retain encrypted account tokens and logout only 
       run(request("status", cookie)).then((r) => r.json()),
     ),
   );
-  assert.equal(statuses[0].user.accountId, "1");
-  assert.equal(statuses[1].user.accountId, "2");
+  assert.deepEqual(statuses.map((status) => status.user.accountId).sort(), [
+    "1",
+    "2",
+  ]);
   for (const cookie of cookies) {
     const sid = await unsign(
       readCookie(request("session", cookie), "lwc_session")!,
@@ -137,7 +139,7 @@ test("independent device logins retain encrypted account tokens and logout only 
   );
   assert.equal(
     (await (await run(request("session", cookies[1]))).json()).user.accountId,
-    "2",
+    statuses[1].user.accountId,
   );
   assert.equal(
     (await run(request("logout", cookies[1], "POST", "https://evil.test")))
@@ -262,4 +264,22 @@ test("session rate counters are isolated and concurrent requests consume individ
   );
   assert.equal((await rates.get("a"))?.count, 1);
   assert.equal((await rates.get("b"))?.count, 1);
+});
+
+test("only a verified cookie selects a session lock", async () => {
+  const keys: string[] = [];
+  const run = serializeSessionRequests(
+    async () => Response.json({ ok: true }),
+    secret,
+    {
+      run: async (key, action) => {
+        keys.push(key);
+        return action();
+      },
+    },
+  );
+  await run(request("session", "lwc_session=attacker.signature"));
+  await run(request("session"));
+  await run(request("session", await cookieFor("verified-session")));
+  assert.deepEqual(keys, ["verified-session"]);
 });

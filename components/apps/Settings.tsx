@@ -177,7 +177,7 @@ export default function Settings() {
                 <Monitor size={20} />
               </div>
               <div>
-                <h2>Keep the desktop close</h2>
+                <h2>Install app</h2>
                 <p>
                   Install oma.os using your browser’s “Install app” or “Add to
                   Dock / Home Screen” action. A separate app window gives the
@@ -204,7 +204,7 @@ export default function Settings() {
                 <HardDrive size={20} />
               </div>
               <div>
-                <h2>Your browser’s filesystem</h2>
+                <h2>Storage</h2>
                 <div
                   className="storage-meter"
                   role="meter"
@@ -268,7 +268,7 @@ export default function Settings() {
                 <Archive size={20} />
               </div>
               <div>
-                <h2>Take your work with you</h2>
+                <h2>Backup & restore</h2>
                 <p>
                   Export a ZIP containing your home files and oma.os
                   configuration, including saved agent conversations. Desktop

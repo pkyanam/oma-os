@@ -1,6 +1,6 @@
 # oma.os
 
-[Live desktop](https://oma-os-red.vercel.app) · [Agent contract](docs/AGENT_CONTRACT.md) · [Deployment guide](docs/DEPLOYMENT.md)
+[Live desktop](https://oma-os.preetham-981.workers.dev) · [Agent contract](docs/AGENT_CONTRACT.md) · [Deployment guide](docs/DEPLOYMENT.md)
 A local-first browser desktop for thinking, making, and working with an agent. Tokyo Night, tiled windows, nine workspaces, real applications, and one shared filesystem.
 
 **[Quick start](#quick-start) · [Applications](#applications) · [Self-hosting](#self-hosting) · [For agents](#for-agents) · [Research](docs/RESEARCH.md)**
@@ -9,25 +9,34 @@ MIT licensed. Inspired by Omarchy; not affiliated with Omarchy, Omacom, OpenAI, 
 
 ## Quick start
 
-Requires **Node.js 22+ and Git**. On macOS or Linux:
+**[Open the hosted desktop](https://oma-os.preetham-981.workers.dev)**. No installation is needed for local apps. Files stay in this browser; use Settings to export a backup before changing devices or origins.
 
-```sh
-curl -fsSL https://raw.githubusercontent.com/pkyanam/oma-os/main/scripts/install.sh | sh
-```
-
-The [installer](scripts/install.sh) clones into a new `oma-os` directory, installs dependencies and Chromium, then starts **[localhost:3017](http://localhost:3017)**. It refuses to overwrite an existing directory. Set `OMA_INSTALL_DIR` for another destination or `OMA_SKIP_BROWSER=1` to skip Chromium. Review the script before running it.
-
-Or install manually:
+For development, use **Node.js 22.12+ and Git**:
 
 ```sh
 git clone https://github.com/pkyanam/oma-os.git
 cd oma-os
 npm ci
-npm run setup:browser
-npm run dev
+npm run dev:cloudflare
 ```
 
-Linux may need `npx playwright install-deps chromium`. Use HTTPS or localhost for browser filesystem access.
+Open **[localhost:3018](http://localhost:3018)**. Vite and the Cloudflare plugin run the desktop and Worker together. Managed browser access needs Cloudflare configuration; local development alone does not grant cloud credentials.
+
+The one-line installer starts the Cloudflare local profile at **localhost:3018**:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/pkyanam/oma-os/main/scripts/install.sh | sh
+```
+
+The [script](scripts/install.sh) refuses to overwrite an existing directory. `OMA_INSTALL_DIR` selects a destination. `npm run dev:cloudflare` creates a private random `LWC_SECRET` in gitignored `.dev.vars` on first run and preserves any existing value. It needs no Cloudflare login for local apps or auth; managed cloud browsing still needs Cloudflare configuration. The default profile does not download Chromium.
+
+For the alternative Node/Next profile with local Chromium and no Cloudflare account, use:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/pkyanam/oma-os/main/scripts/install.sh | OMA_RUNTIME=node sh
+```
+
+This starts **localhost:3017**. Set `OMA_SKIP_BROWSER=1` to skip its Chromium download. Review the installer before running; Linux may need `npx playwright install-deps chromium`.
 
 ## Applications
 
@@ -94,7 +103,9 @@ Just Bash interprets shell language in a browser worker. Native processes, host 
 
 Open **Agent → Model & connection**.
 
-**ChatGPT account:** the bundled [Login with ChatGPT](https://github.com/opencoredev/login-with-chatgpt) community SDK handles device authorization and server-side proxying. Read the in-app consent text. This is not an official OpenAI sign-in SDK. Models are discovered from the account. Self-hosted encrypted sessions live in `.oma-auth`; disconnect removes the session.
+**ChatGPT account:** the bundled [Login with ChatGPT](https://github.com/opencoredev/login-with-chatgpt) community SDK handles device authorization and server-side proxying. Read the in-app consent text. This is not an official OpenAI sign-in SDK. Models are discovered from the account. Cloudflare keeps encrypted sessions in per-session SQLite Durable Objects. The Node profile uses `.oma-auth` or Redis; disconnect removes the session. A configured login route does not guarantee that a particular account or model is eligible.
+
+**Cloudflare model (optional):** explicitly select `@cf/zai-org/glm-4.7-flash`. ChatGPT sign-in supplies account identity for this mode; inference runs on Workers AI and is billed to the deployment, not your ChatGPT subscription. A coordinated Durable Object caps daily calls and input/output budgets. This mode is implemented; actual inference availability depends on the deployed account and model service. See [budgets and verification](docs/DEPLOYMENT.md#workers-ai-mode).
 
 **Provider key:** enter an OpenAI-compatible endpoint, key, and model ID. Requests go directly from the browser to a CORS-enabled provider. Keys stay in tab memory; endpoint/model preferences can persist. Reloading requires reentering the key.
 
@@ -104,12 +115,13 @@ Selected file context and tool-read content are sent to your model. Replacing an
 
 | Mode | Capabilities |
 | --- | --- |
-| Chromium | Real isolated browser on a persistent Node server: JavaScript, CSS, mouse, keyboard, scrolling, navigation inside oma.os |
+| Cloudflare Live View | Managed Chromium rendered inside the OS, with JavaScript, navigation and interactive controls |
+| Node Chromium | Isolated server browser using screenshot/input transport |
 | Document | Readable HTML with scripts removed; links and GET forms stay inside the OS |
 | Embed | Direct iframe when the website permits embedding |
-| Local app | Opaque-origin HTML/CSS/JS sandbox with local exports and no automatic parent filesystem/auth access |
+| Local app | Opaque-origin HTML/CSS/JS sandbox with no automatic parent filesystem/auth access |
 
-Chromium's public-only egress proxy pins DNS addresses and blocks private networks. It never uses your host browser profile. Sessions are ephemeral. Image transport currently does not relay website audio, native-frame-rate video, clipboard selection, or file-upload dialogs. Websites can still present normal bot challenges or sign-in requirements. Details: [browser](docs/research-browser.md), [Chromium service](docs/research-remote-browser.md).
+Cloudflare uses Browser Run plus a per-user Durable Object. Live View is a Cloudflare beta feature; sessions are temporary and websites can present normal bot challenges. It does not reuse your personal browser profile. The secondary Node service uses a DNS-pinned public-only proxy and image transport; that transport does not relay website audio, clipboard selection, or upload dialogs. See [deployment differences](docs/DEPLOYMENT.md).
 
 ## Your data
 
@@ -117,11 +129,23 @@ User files live in **Origin Private File System** under `/home/guest` and `/.oma
 
 **Settings → Storage & backup** requests persistent storage and exports a portable ZIP. Restore previews files and skips existing paths unless replacement is explicitly selected. Save open documents first. Server authentication secrets and provider keys are excluded; personal notes and saved conversations can be included.
 
-Python downloads a pinned Pyodide runtime on first use. Models and external websites need network access. Local data persistence does not promise complete offline startup after a fresh reload.
+Python loads pinned Pyodide 314.0.6 assets lazily through a same-origin, hash-verified gateway. Models and external websites need network access. Local data persistence does not promise complete offline startup after a fresh reload. Cloud backup/sync is not implemented; the hosted account has not enabled R2.
 
-## Self-hosting
+## Hosting
 
-### Node
+### Cloudflare — primary
+
+```sh
+npx wrangler login
+npx wrangler secret put LWC_SECRET
+npm run deploy:cloudflare
+```
+
+Supply a stable random secret when prompted. The script runs the Vite build and Wrangler deployment. `wrangler.jsonc` declares static assets, SQLite auth/browser Durable Objects, managed Browser Run, rate limiting, and observability. Pyodide uses a lazy Cache API gateway. No Node sidecar or Redis is required on this target.
+
+The published deployment runs on an existing Workers Paid account; this work did not upgrade the plan. Browser runtime and other services have usage allowances and charges. Follow the [deployment guide](docs/DEPLOYMENT.md) for prerequisites, verification, and secrets. [Cloudflare architecture](docs/CLOUDFLARE.md) separates working services from future options such as R2, AI Gateway, and durable background agents.
+
+### Node / Docker / Vercel — alternatives
 
 ```sh
 npm ci
@@ -130,25 +154,7 @@ npm run build
 OMA_BROWSER_ENABLED=1 npm start
 ```
 
-Production uses port **3017** by default (`PORT` overrides it). The startup script serves Next's standalone build and keeps authentication storage outside generated files. Use HTTPS and your normal access controls before exposing a Chromium-enabled host publicly.
-
-See [`.env.example`](.env.example). A persistent single host can generate its encryption secret automatically. Set `LWC_SECRET` for an explicitly managed secret and `OMA_AUTH_DIR` for persistent server storage.
-
-### Docker
-
-```sh
-docker compose up --build -d
-```
-
-The composition binds `127.0.0.1:3017`, uses a non-root user, retains server auth in a volume, and includes Playwright's sandbox seccomp profile. Client files stay in the user's browser. See [deployment requirements and validation](docs/DEPLOYMENT.md).
-
-### Vercel
-
-Import this repository as a Next.js project or run `vercel --prod`. The desktop, local apps, provider-key mode, and document browser work on Vercel.
-
-ChatGPT login requires **all three**: `LWC_SECRET`, `UPSTASH_REDIS_REST_URL`, and `UPSTASH_REDIS_REST_TOKEN`. Without shared durable storage, the UI explains the limitation and offers provider-key mode.
-
-Interactive Chromium requires a persistent server and is disabled in Vercel functions. Cloudflare Workers is not a drop-in deployment for the Node TCP/DNS browser service. See the [capability matrix](docs/DEPLOYMENT.md).
+Node serves port **3017** by default and bundles local auth plus optional Chromium. Docker uses `docker compose up --build -d`; its configuration was reviewed but not run in the build environment. Vercel uses the retained Next target; ChatGPT auth requires `LWC_SECRET` and both Upstash Redis REST credentials. Vercel does not run interactive Chromium. See [the capability matrix](docs/DEPLOYMENT.md) and [environment variables](.env.example).
 
 ## Contributing
 
@@ -156,6 +162,7 @@ Interactive Chromium requires a persistent server and is disabled in Vercel func
 npm test
 npm run typecheck
 npm run build
+npm run build:cloudflare
 npx playwright install chromium
 npm run test:e2e
 ```
@@ -183,11 +190,21 @@ You are working on oma.os, an MIT-licensed browser desktop.
 Read AGENTS.md, BUILD_PLAN.md, and OMA_OS_V1_SPEC.md. Current user direction
 and BUILD_PLAN.md resolve the original specification's scope limits.
 
-Start: npm ci && npm run setup:browser && npm run dev (localhost:3017).
-Verify: npm test, npm run typecheck, npm run build, npm run test:e2e.
+Primary target: npm ci && npm run dev:cloudflare (localhost:3018).
+Verify: npm test, npm run typecheck, npm run build, npm run build:cloudflare,
+and relevant npm run test:e2e checks. Deploy: npm run deploy:cloudflare.
+Node fallback: npm run setup:browser && npm run dev (localhost:3017).
+Cloud pipeline: Vite -> Workers Static Assets + cloudflare/index.ts;
+AUTH_SESSIONS/AuthSession, BROWSER_SESSIONS/BrowserSession, BROWSER,
+AI_QUOTA/AIQuota, AI, API_LIMITER, ASSETS. LWC_SECRET is a Worker secret, never a client variable.
+Pyodide uses /runtime/pyodide/v314.0.6/ through a verified lazy cache gateway.
+Do not add unused cloud bindings or claim R2 is configured. Workers AI is
+explicitly selected; verify actual inference before claiming it works.
 
 Apps share OPFS files and the typed command bus in lib/oma/bus.ts.
 Register apps in lib/apps/registry.ts and mount them in components/Tile.tsx.
+App IDs: term, files, editor, agent, browser, notes, canvas, lab, data,
+media, tasks, settings, apps, draw, database, activity, notice.
 Keep clients mounted through workspace changes; respect save conflicts.
 Use real runtimes. Never invent native processes or successful tool output.
 
@@ -202,4 +219,4 @@ See [extended agent context](docs/AGENT_CONTEXT.md) for operation and extension 
 
 ## License
 
-[MIT](LICENSE) for oma.os code. Dependencies retain their licenses; see [third-party notices](THIRD_PARTY_NOTICES.md). Built on open-source projects including Next.js, React, Monaco, xterm, Just Bash, AI SDK, Excalidraw, PGlite, Pyodide, and Playwright. ryOS was researched for architecture; no AGPL source was copied.
+[MIT](LICENSE) for oma.os code. Dependencies retain their licenses; see [third-party notices](THIRD_PARTY_NOTICES.md). Built on open-source projects including Vite, Cloudflare tooling, Next.js, React, Monaco, xterm, Just Bash, AI SDK, Excalidraw, PGlite, Pyodide, and Playwright. ryOS was researched for architecture; no AGPL source was copied.

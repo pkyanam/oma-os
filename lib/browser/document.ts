@@ -1,6 +1,5 @@
 import sanitize from "sanitize-html";
-import { randomBytes } from "node:crypto";
-import { localKeyboardBridge } from "../apps/browser-target";
+import { localKeyboardBridge } from "./keyboard-bridge";
 function absolute(value: string, base: string) {
   try {
     const url = new URL(value, base);
@@ -86,7 +85,7 @@ export function documentHTML(html: string, base: string) {
     },
   });
   const safeBase = JSON.stringify(base).replace(/</g, "\\u003c");
-  const nonce = randomBytes(18).toString("base64");
+  const nonce = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(18))));
   // Only our navigation/keyboard bridge executes. Remote scripts, forms, frames,
   // workers and connection APIs cannot run inside the readable document.
   const policy = `default-src 'none'; script-src 'nonce-${nonce}'; style-src https: http: 'unsafe-inline'; img-src https: http: data:; font-src https: http: data:; media-src https: http:; base-uri 'none'; form-action 'none'; frame-src 'none'; object-src 'none'; connect-src 'none'`;

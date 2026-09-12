@@ -138,7 +138,6 @@ export default function Applications({ active }: { active: boolean }) {
       <header className="applications-header">
         <div>
           <strong>Applications</strong>
-          <span>Your tools. Your source. Your desk.</span>
         </div>
         <button
           className="applications-help-button"
@@ -162,7 +161,7 @@ export default function Applications({ active }: { active: boolean }) {
             aria-label="Search applications"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Find an app or a use case…"
+            placeholder="Search applications…"
           />
         </label>
         <nav aria-label="Application categories">
@@ -191,7 +190,7 @@ export default function Applications({ active }: { active: boolean }) {
       <div className="applications-scroll">
         {category === "All" && !query && (
           <div className="applications-welcome-strip">
-            <span>Desktop ready. A model is optional.</span>
+            <span>Apps work without a model.</span>
             <button onClick={() => setShowHelp(true)}>
               Start here <ArrowRight size={12} />
             </button>
@@ -200,7 +199,7 @@ export default function Applications({ active }: { active: boolean }) {
         {builtins.length > 0 && (
           <section>
             <div className="applications-section">
-              <h2>{category === "All" ? "On your desktop" : category}</h2>
+              <h2>{category === "All" ? "Built-in apps" : category}</h2>
               <span>{builtins.length} apps</span>
             </div>
             <div className="applications-grid">
@@ -230,8 +229,8 @@ export default function Applications({ active }: { active: boolean }) {
         {showLocal && templates.length > 0 && (
           <section>
             <div className="applications-section">
-              <h2>Make it yours</h2>
-              <span>Editable, local HTML apps</span>
+              <h2>Add apps</h2>
+              <span>Editable apps</span>
             </div>
             <div className="applications-grid">
               {templates.map((template) => {
@@ -263,7 +262,7 @@ export default function Applications({ active }: { active: boolean }) {
                           ) : (
                             <>
                               <Plus size={12} />
-                              Add to desktop
+                              Add app
                             </>
                           )}
                         </button>
@@ -289,15 +288,15 @@ export default function Applications({ active }: { active: boolean }) {
               })}
             </div>
             <p className="applications-hint">
-              Adding an app copies its source into your Applications folder.
-              Your edits are kept when you open it again.
+              Source files are saved in Applications. Existing edits are
+              preserved.
             </p>
           </section>
         )}
         {showLocal && installed.length > 0 && (
           <section>
             <div className="applications-section">
-              <h2>Your applications</h2>
+              <h2>Installed apps</h2>
               <span>{installed.length} local</span>
             </div>
             <div className="applications-local-list">
@@ -321,7 +320,7 @@ export default function Applications({ active }: { active: boolean }) {
                     <FileCode2 size={15} />
                   </button>
                   <button
-                    aria-label={`Remove ${app.title} registration`}
+                    aria-label={`Remove ${app.title} from list`}
                     onClick={() => setRemove(app)}
                   >
                     <X size={14} />
@@ -334,8 +333,8 @@ export default function Applications({ active }: { active: boolean }) {
         {showLocal && !query && (
           <section>
             <div className="applications-section">
-              <h2>Start a working session</h2>
-              <span>Useful combinations</span>
+              <h2>Open a workspace</h2>
+              <span>App combinations</span>
             </div>
             <div className="applications-workflows">
               <button
@@ -346,8 +345,8 @@ export default function Applications({ active }: { active: boolean }) {
               >
                 <BookOpen size={17} />
                 <span>
-                  <strong>Research notebook</strong>
-                  <small>Read in Browser. Keep conclusions in Notes.</small>
+                  <strong>Research</strong>
+                  <small>Browser + Notes</small>
                 </span>
                 <ArrowRight size={14} />
               </button>
@@ -359,10 +358,8 @@ export default function Applications({ active }: { active: boolean }) {
               >
                 <FlaskConical size={17} />
                 <span>
-                  <strong>A data story</strong>
-                  <small>
-                    Inspect a table and turn it into a Python report.
-                  </small>
+                  <strong>Analyze data</strong>
+                  <small>Data + Python Lab</small>
                 </span>
                 <ArrowRight size={14} />
               </button>
@@ -374,8 +371,8 @@ export default function Applications({ active }: { active: boolean }) {
               >
                 <PenTool size={17} />
                 <span>
-                  <strong>Map a project</strong>
-                  <small>Draw the system, then plan the next steps.</small>
+                  <strong>Plan a project</strong>
+                  <small>Canvas + Tasks</small>
                 </span>
                 <ArrowRight size={14} />
               </button>
@@ -393,8 +390,8 @@ export default function Applications({ active }: { active: boolean }) {
               >
                 <Clock3 size={17} />
                 <span>
-                  <strong>One thing at a time</strong>
-                  <small>A local 25 / 50 / 5 minute interval timer.</small>
+                  <strong>Focus timer</strong>
+                  <small>25, 50, or 5 minute intervals</small>
                 </span>
                 <ArrowRight size={14} />
               </button>
@@ -420,7 +417,7 @@ export default function Applications({ active }: { active: boolean }) {
           <div className="applications-own">
             <FileCode2 size={18} />
             <div>
-              <strong>Bring your own app</strong>
+              <strong>Add a custom app</strong>
               <p>
                 Put an <code>index.html</code> in a folder inside{" "}
                 <code>/home/guest/Applications</code>. It appears here
@@ -440,7 +437,7 @@ export default function Applications({ active }: { active: boolean }) {
         <div
           className="applications-confirm"
           role="alertdialog"
-          aria-label="Remove app registration"
+          aria-label="Remove app from list"
           onKeyDown={(event) => {
             if (event.key !== "Tab") return;
             const buttons = Array.from(
@@ -458,10 +455,7 @@ export default function Applications({ active }: { active: boolean }) {
           }}
         >
           <strong>Remove {remove.title} from this list?</strong>
-          <p>
-            Its source files stay in Applications. You can still open them from
-            Files. Adding the template again restores its listing.
-          </p>
+          <p>Source files are kept. You can still open the app from Files.</p>
           <div>
             <button autoFocus onClick={() => setRemove(null)}>
               Keep app
@@ -478,16 +472,15 @@ export default function Applications({ active }: { active: boolean }) {
                 }
               }}
             >
-              Remove registration
+              Remove from list
             </button>
           </div>
         </div>
       )}
       <footer className="applications-footer">
         <span>
-          {builtinCatalog.length} built-in tools · {local.length} local apps
+          {builtinCatalog.length} built-in apps · {local.length} local apps
         </span>
-        <span>Made to be used</span>
       </footer>
     </div>
   );

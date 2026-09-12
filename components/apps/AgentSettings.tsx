@@ -3,12 +3,14 @@ import { useEffect, useState } from "react";
 import { useLoginWithChatGPT } from "@opencoredev/loginwithchatgpt-react";
 import { Check, RefreshCw, ExternalLink, X } from "lucide-react";
 import { useAgentConfig, providerURL } from "@/lib/agent/settings";
+import { WORKERS_AI_MODEL, workersAIAvailability } from "@/lib/agent/hosted";
 import { discoverModels } from "@/lib/agent/harness";
 export default function AgentSettings({ onClose }: { onClose: () => void }) {
   const config = useAgentConfig(),
     [models, setModels] = useState<string[]>([]),
     [error, setError] = useState(""),
     [loading, setLoading] = useState(false),
+    [hosted, setHosted] = useState<{ enabled: boolean; models: string[] }>(),
     [availability, setAvailability] = useState<{
       enabled: boolean;
       reason?: string;
@@ -18,20 +20,34 @@ export default function AgentSettings({ onClose }: { onClose: () => void }) {
       .then((r) => r.json())
       .then((data) => {
         setAvailability(data.chatgpt);
-        if (!data.chatgpt.enabled) useAgentConfig.setState({ mode: "direct" });
+        setHosted(workersAIAvailability(data.workersAI));
       })
-      .catch(() =>
+      .catch(() => {
         setAvailability({
           enabled: false,
           reason: "Auth service unavailable. Direct provider keys still work.",
-        }),
-      );
+        });
+        setHosted({ enabled: false, models: [] });
+      });
   }, []);
+  useEffect(() => {
+    if (config.mode === "workers-ai")
+      useAgentConfig.setState({ model: WORKERS_AI_MODEL });
+  }, [config.mode]);
   const refresh = async () => {
+    const requested = useAgentConfig.getState();
+    const currentRequest = () => {
+      const current = useAgentConfig.getState();
+      return (
+        current.mode === requested.mode &&
+        (requested.mode !== "direct" || current.baseURL === requested.baseURL)
+      );
+    };
     setLoading(true);
     setError("");
     try {
-      const ids = await discoverModels(useAgentConfig.getState());
+      const ids = await discoverModels(requested);
+      if (!currentRequest()) return;
       setModels(ids);
       if (!ids.length)
         throw new Error(
@@ -40,7 +56,8 @@ export default function AgentSettings({ onClose }: { onClose: () => void }) {
       if (!ids.includes(useAgentConfig.getState().model))
         useAgentConfig.setState({ model: ids[0] });
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      if (currentRequest())
+        setError(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
     }
@@ -74,8 +91,44 @@ export default function AgentSettings({ onClose }: { onClose: () => void }) {
         >
           Provider key
         </button>
+        <button
+          className={config.mode === "workers-ai" ? "selected" : ""}
+          onClick={() => {
+            useAgentConfig.setState({
+              mode: "workers-ai",
+              model: WORKERS_AI_MODEL,
+            });
+            setModels([]);
+            setError("");
+          }}
+        >
+          Workers AI
+        </button>
       </div>
-      {config.mode === "chatgpt" ? (
+      {config.mode === "workers-ai" ? (
+        <>
+          <p className="connection-note">
+            GLM 4.7 Flash runs on this deployment’s Cloudflare Workers AI
+            allowance. Sign in with ChatGPT to identify your session; inference
+            uses Cloudflare, not your ChatGPT plan. No provider key is needed.
+            Shared daily limits apply; there is no automatic fallback.
+          </p>
+          {!hosted?.enabled && (
+            <p className="connection-note">
+              {hosted
+                ? "Workers AI is not enabled on this deployment."
+                : "Checking Workers AI availability…"}
+            </p>
+          )}
+          {availability?.enabled ? (
+            <ChatGPTConnection hosted onConnected={() => void refresh()} />
+          ) : (
+            <p className="connection-note">
+              {availability?.reason ?? "Checking sign-in availability…"}
+            </p>
+          )}
+        </>
+      ) : config.mode === "chatgpt" ? (
         availability?.enabled ? (
           <ChatGPTConnection onConnected={() => void refresh()} />
         ) : (
@@ -124,18 +177,21 @@ export default function AgentSettings({ onClose }: { onClose: () => void }) {
             list="oma-models"
             value={config.model}
             placeholder="Refresh models or enter a model ID"
+            readOnly={config.mode === "workers-ai"}
             onChange={(e) => useAgentConfig.setState({ model: e.target.value })}
           />
-          <button
-            aria-label="Refresh models"
-            title="Refresh available models"
-            disabled={
-              loading || (config.mode === "chatgpt" && !config.authenticated)
-            }
-            onClick={() => void refresh()}
-          >
-            <RefreshCw size={14} className={loading ? "spinning" : ""} />
-          </button>
+          {config.mode !== "workers-ai" && (
+            <button
+              aria-label="Refresh models"
+              title="Refresh available models"
+              disabled={
+                loading || (config.mode === "chatgpt" && !config.authenticated)
+              }
+              onClick={() => void refresh()}
+            >
+              <RefreshCw size={14} className={loading ? "spinning" : ""} />
+            </button>
+          )}
         </div>
         <datalist id="oma-models">
           {models.map((m) => (
@@ -167,6 +223,14 @@ export default function AgentSettings({ onClose }: { onClose: () => void }) {
             try {
               if (config.mode === "direct") providerURL(config.baseURL);
               if (!config.model) throw new Error("Choose a model first.");
+              if (config.mode === "workers-ai" && !hosted?.enabled)
+                throw new Error(
+                  "Workers AI is unavailable on this deployment. Choose another connection explicitly.",
+                );
+              if (config.mode === "workers-ai" && !config.authenticated)
+                throw new Error(
+                  "Sign in with ChatGPT before using the hosted Workers AI allowance.",
+                );
               onClose();
             } catch (e) {
               setError(e instanceof Error ? e.message : String(e));
@@ -180,7 +244,13 @@ export default function AgentSettings({ onClose }: { onClose: () => void }) {
     </div>
   );
 }
-function ChatGPTConnection({ onConnected }: { onConnected: () => void }) {
+function ChatGPTConnection({
+  onConnected,
+  hosted = false,
+}: {
+  onConnected: () => void;
+  hosted?: boolean;
+}) {
   const auth = useLoginWithChatGPT({
     onAuthenticated: () => {
       useAgentConfig.setState({ authenticated: true });
@@ -219,10 +289,12 @@ function ChatGPTConnection({ onConnected }: { onConnected: () => void }) {
       ) : (
         <>
           <p className="connection-note">
-            Requests use your ChatGPT plan. Prompts pass through this app’s
-            bundled auth service; it stores encrypted session credentials and
-            never sees your password. Disconnect deletes the stored session.
-            This community SDK is not an official OpenAI sign-in integration.
+            {hosted
+              ? "ChatGPT sign-in establishes your identity for this deployment’s Workers AI allowance. Your prompts are sent to Cloudflare for inference. "
+              : "Requests use your ChatGPT plan. Prompts pass through this app’s bundled auth service. "}
+            The sign-in service stores encrypted session credentials and never
+            sees your password. Disconnect deletes the stored session. This
+            community SDK is not an official OpenAI sign-in integration.
           </p>
           <button
             className="connect-button"

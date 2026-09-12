@@ -3,3 +3,15 @@
 .git
 node_modules
 .next
+
+companions
+
+cloudflare
+
+web
+
+vite.config.mts
+
+wrangler.jsonc
+
+dist

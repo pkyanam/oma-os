@@ -39,3 +39,28 @@ oma launch notes
 ```
 
 Seventeen integration tests cover real pipelines, redirection, environment/cwd persistence, Unicode desktop-command input, network/native denial, runaway loops, OPFS binary content, protected roots, filesystem lifecycle/errors, combined help, terminal close semantics and local-file/URL routing. Browser QA additionally checks the worker bundle, terminal interaction, persistence in the real OPFS backend, and Ctrl+C.
+
+### Browser compression
+
+Just Bash 3.4.2's browser declaration explicitly documents that upstream `gzip`,
+`gunzip`, and `zcat` depend on Node zlib and fail in browsers. A real Vite browser
+pipeline confirmed that failure. oma.os supplies these three terminal commands
+using the existing `fflate` browser library instead. They accept stdin or one file,
+`-c` / `--stdout`, and `-d` / `--decompress`; file input requires stdout mode
+(`zcat` implies it). Save output with ordinary shell redirection. Source files are
+never deleted. Unsupported flags are rejected, rather than approximated.
+
+Inputs and decompressed output are capped at 16 MiB. Inflate processes compressed
+input in 1 KiB chunks and checks every emitted output chunk before retaining it;
+the shell worker's wall-clock deadline still applies. These are compression tools,
+not GNU gzip replacements. Examples:
+
+```sh
+printf 'hello\n' | gzip | gunzip
+gzip -c Documents/note.md > Documents/note.md.gz
+zcat Documents/note.md.gz | head
+```
+
+Regression coverage includes all 256 byte values through file and pipe round trips,
+malformed data, oversized input, an inflate bomb exceeding the output cap, and real
+headless browser execution against the Cloudflare Vite build.

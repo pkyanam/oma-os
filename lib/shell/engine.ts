@@ -1,3 +1,4 @@
+import { compressionCommands } from "./compression";
 import {
   Bash,
   defineCommand,
@@ -80,6 +81,7 @@ export function createShellEngine(
     executionLimits: SHELL_LIMITS,
     // No network, Python or JS execution options are provided.
     customCommands: [
+      ...compressionCommands(),
       ...[
         "oma",
         "edit",

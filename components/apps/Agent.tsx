@@ -86,7 +86,7 @@ export default function Agent({ active }: { active: boolean }) {
     approvalTail = useRef<Promise<unknown>>(Promise.resolve());
   const connected =
     !!config.model &&
-    (config.mode === "chatgpt" ? config.authenticated : !!config.apiKey);
+    (config.mode === "direct" ? !!config.apiKey : config.authenticated);
   current.current = conversation;
   const persist = useCallback((value: Conversation) => {
     if (!value.messages.length || deleted.current.has(value.id)) return;

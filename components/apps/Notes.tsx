@@ -277,7 +277,7 @@ export default function Notes({
             <Search size={14} />
             <input
               aria-label="Search notes"
-              placeholder="Search everything"
+              placeholder="Search notes"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
@@ -323,13 +323,13 @@ export default function Notes({
                 {query
                   ? "No matching notes."
                   : archived
-                    ? "Your archive is empty."
-                    : "A fresh page is waiting."}
+                    ? "Archive is empty."
+                    : "No notes yet."}
               </div>
             )}
           </div>
           <footer>
-            {notes.length} {notes.length === 1 ? "note" : "notes"} · local only
+            {notes.length} {notes.length === 1 ? "note" : "notes"}
           </footer>
         </aside>
         <main className="notes-editor">
@@ -406,7 +406,7 @@ export default function Notes({
                   spellCheck
                   maxLength={2_000_000}
                   value={note.body}
-                  placeholder="Let the first sentence be imperfect."
+                  placeholder="Write a note…"
                   onChange={(e) => edit({ body: e.target.value })}
                 />
               )}
@@ -414,7 +414,7 @@ export default function Notes({
           ) : (
             <div className="creative-empty">
               <BookOpen size={32} />
-              <p>A place for your next idea.</p>
+              <p>No note selected.</p>
               <button onClick={() => add()} disabled={!doc.ready}>
                 Create a note
               </button>

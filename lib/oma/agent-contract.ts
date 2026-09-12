@@ -236,6 +236,13 @@ export function agentCapabilities(toolsEnabled = true) {
         approval: "per existing-file change; exact before/after preview",
       },
       {
+        id: "web.read",
+        approval: "none",
+        scope: [
+          "public static HTML through document gateway; 24,000 characters; no browser credentials",
+        ],
+      },
+      {
         id: "shell.read",
         approval: "none",
         scope: ["enforced read-only filesystem; no network or desktop bridge"],
@@ -248,7 +255,7 @@ export function agentCapabilities(toolsEnabled = true) {
       "app selections or unsaved buffers",
       "per-app action adapters",
       "agent Python/SQL execution",
-      "browser DOM or page text extraction",
+      "live browser DOM or authenticated page extraction",
       "filesystem deletion",
       "desktop reset",
       "model-controlled approvals",
@@ -307,7 +314,11 @@ export type InspectState = {
 };
 export function inspectDesktop(
   state: InspectState,
-  config: { mode: "chatgpt" | "direct"; model: string; tools: boolean },
+  config: {
+    mode: "chatgpt" | "direct" | "workers-ai";
+    model: string;
+    tools: boolean;
+  },
 ) {
   const workspaces = Object.entries(state.workspaces).map(([id, ws]) => ({
     id: Number(id),

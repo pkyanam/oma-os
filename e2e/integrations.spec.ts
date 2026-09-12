@@ -86,6 +86,8 @@ test("Excalidraw imports native images, persists scenes and exports portable dra
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await boot(page);
+  // Monaco owns an AMD loader; UMD dependencies must still export CommonJS.
+  await expect(page.locator(".monaco-editor").first()).toBeVisible();
   await page.keyboard.press("Alt+2");
   const app = await launch(page, "Excalidraw");
   await expect(app.locator(".excalidraw")).toBeVisible({ timeout: 60000 });

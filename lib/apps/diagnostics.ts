@@ -5,12 +5,17 @@ export type DiagnosticRow = {
   status: "ok" | "info" | "error";
 };
 export function describeModel(input: {
-  mode: "direct" | "chatgpt";
+  mode: "direct" | "chatgpt" | "workers-ai";
   model: string;
   authenticated: boolean;
   status: "offline" | "idle" | "think" | "err";
 }): DiagnosticRow {
-  const mode = input.mode === "chatgpt" ? "ChatGPT login" : "Direct provider";
+  const mode =
+    input.mode === "workers-ai"
+      ? "Cloudflare Workers AI"
+      : input.mode === "chatgpt"
+        ? "ChatGPT login"
+        : "Direct provider";
   const model = input.model
     ? `Selected model: ${input.model.slice(0, 200)}.`
     : "No model selected.";
@@ -31,7 +36,7 @@ export function describeModel(input: {
   if (
     input.status === "offline" ||
     !input.model ||
-    (input.mode === "chatgpt" && !input.authenticated)
+    (input.mode !== "direct" && !input.authenticated)
   )
     return {
       label: "Agent",

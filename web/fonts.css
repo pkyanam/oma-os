@@ -1,0 +1,4 @@
+@font-face{font-family:Inter;src:url('/fonts/InterVariable.woff2') format('woff2');font-weight:100 900;font-style:normal;font-display:swap}
+@font-face{font-family:'JetBrains Mono';src:url('/fonts/JetBrainsMono-Regular.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
+:root{--font-inter:Inter;--font-jetbrains:'JetBrains Mono'}
+#root{height:100dvh;overflow:hidden}.boot-error{height:100dvh;display:grid;place-content:center;gap:16px;padding:24px}

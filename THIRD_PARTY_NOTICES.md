@@ -13,11 +13,27 @@ oma.os source is MIT licensed. Third-party software, fonts, runtimes and assets 
 | [DOMPurify](https://github.com/cure53/DOMPurify)            | 3.4.15 supplied to the checked Monaco patch             | Dual MPL-2.0 or Apache-2.0; distributed here under the [Apache-2.0 option](public/licenses/dompurify-apache.txt). Upstream copyright and license header remain in patched code.                                                         |
 | [Just Bash](https://github.com/vercel-labs/just-bash)       | 3.4.2                                                   | Apache-2.0; [license](public/licenses/just-bash.txt)                                                                                                                                                                                    |
 | [Playwright](https://github.com/microsoft/playwright)       | 1.63.0                                                  | Apache-2.0, copyright Microsoft Corporation; [license](docker/PLAYWRIGHT-LICENSE), [NOTICE](docker/PLAYWRIGHT-NOTICE)                                                                                                                   |
-| [Pyodide](https://github.com/pyodide/pyodide)               | 314.0.6, fetched by Python Lab from its pinned CDN path | MPL-2.0 for Pyodide; [upstream versioned license](https://github.com/pyodide/pyodide/blob/314.0.6/LICENSE). CPython and optional Python packages retain their own licenses. The runtime is downloaded, not copied into this repository. |
+| [Pyodide](https://github.com/pyodide/pyodide)               | 314.0.6, served lazily through the verified same-origin gateway | MPL-2.0 for Pyodide; [upstream versioned license](https://github.com/pyodide/pyodide/blob/314.0.6/LICENSE). CPython and optional Python packages retain their own licenses. The gateway retrieves and caches approved upstream assets; their original licenses remain applicable. NumPy 2.4.6 is included in the approved manifest (BSD-3-Clause, with bundled component notices in the wheel). |
 
 PGlite's WASM and runtime files, Excalidraw fonts, and Monaco AMD files are copied into `public/` by the asset preparation script. Their licenses must remain with redistributed builds. Excalidraw integration is the upstream open-source application, not code copied from the hosted ryOS project.
 
 `docker/seccomp_profile.json` is an unchanged copy of [Playwright v1.63.0's profile](https://github.com/microsoft/playwright/blob/v1.63.0/utils/docker/seccomp_profile.json). Playwright describes it as Docker's default seccomp policy with additional user-namespace permissions. The copied Playwright license and NOTICE accompany it. The bundled Chromium executable is installed from Playwright during setup/container build and includes Chromium's own third-party notices; its license is not replaced by Playwright's Apache license.
+
+The pinned Python manifest is `lib/runtime/pyodide-assets.json`; it records hashes and sizes for Pyodide 314.0.6 and approved packages including NumPy 2.4.6. Redistribution through the gateway does not remove CPython, NumPy, or bundled library notices. See [NumPy versioned license](https://github.com/numpy/numpy/blob/v2.4.6/LICENSE.txt).
+
+`es6-promise-pool` is redistributed with a build-time compatibility transformation for Vite. Its MIT copyright notice is preserved in [the copied license](public/licenses/es6-promise-pool.txt). The transformation does not change its licensing.
+
+## Cloudflare target and tooling
+
+| Package | Reviewed version | License |
+| --- | --- | --- |
+| `@cloudflare/puppeteer` | 1.4.0 | Apache-2.0 |
+| `@cloudflare/vite-plugin` | 1.54.8 | MIT |
+| `@cloudflare/workers-types` | 5.20260911.1 | MIT OR Apache-2.0 |
+| Wrangler | 4.131.1 | MIT OR Apache-2.0 |
+| Vite | 8.3.0 | MIT |
+
+Licenses were read from the installed package metadata; preserve package LICENSE/NOTICE files when redistributing tooling. Cloudflare's managed services are operated under their service terms; the oma.os MIT license does not license the hosted infrastructure. Puppeteer is used on the Worker side, not as a browser-owned local Chromium executable.
 
 ## Fonts and icons
 

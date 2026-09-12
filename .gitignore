@@ -12,3 +12,11 @@ public/excalidraw/
 public/pglite/
 .oma-auth/
 .vercel
+
+.wrangler/
+
+dist/
+
+.dev.vars
+
+.dev.vars.*

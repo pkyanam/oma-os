@@ -13,8 +13,7 @@ export const builtinCatalog: CatalogApp[] = [
   {
     id: "notes",
     title: "Notes",
-    description:
-      "Daily pages, project briefs, and a searchable Markdown notebook.",
+    description: "Write, search, and export Markdown notes.",
     category: "Think",
     icon: "notebook",
     keywords: ["writing", "journal", "markdown"],
@@ -22,8 +21,7 @@ export const builtinCatalog: CatalogApp[] = [
   {
     id: "tasks",
     title: "Tasks",
-    description:
-      "Plan the next step, track progress, and protect a little focus.",
+    description: "Track tasks, deadlines, and focused work.",
     category: "Think",
     icon: "tasks",
     keywords: ["kanban", "todo", "focus"],
@@ -31,7 +29,7 @@ export const builtinCatalog: CatalogApp[] = [
   {
     id: "browser",
     title: "Browser",
-    description: "Explore websites and run your own local HTML applications.",
+    description: "Browse websites and open local HTML apps.",
     category: "Think",
     icon: "globe",
     keywords: ["web", "internet", "research"],
@@ -39,7 +37,7 @@ export const builtinCatalog: CatalogApp[] = [
   {
     id: "canvas",
     title: "Canvas",
-    description: "Sketch an idea, map a system, and export a diagram.",
+    description: "Draw shapes, arrows, and diagrams.",
     category: "Create",
     icon: "canvas",
     keywords: ["draw", "whiteboard", "svg"],
@@ -47,8 +45,7 @@ export const builtinCatalog: CatalogApp[] = [
   {
     id: "draw",
     title: "Excalidraw",
-    description:
-      "The MIT-licensed infinite canvas. Diagram, sketch, and keep editable Excalidraw scenes.",
+    description: "Sketch on an infinite canvas with Excalidraw.",
     category: "Create",
     icon: "draw",
     keywords: ["excalidraw", "whiteboard", "diagram", "MIT"],
@@ -56,8 +53,7 @@ export const builtinCatalog: CatalogApp[] = [
   {
     id: "database",
     title: "SQL Workbench",
-    description:
-      "Real PostgreSQL in your browser, powered by the Apache-licensed PGlite runtime.",
+    description: "Query and manage a local PostgreSQL database.",
     category: "Build",
     icon: "sql",
     keywords: ["postgresql", "database", "sql", "pglite"],
@@ -65,7 +61,7 @@ export const builtinCatalog: CatalogApp[] = [
   {
     id: "media",
     title: "Media",
-    description: "Your photographs, audio, video, and PDF documents.",
+    description: "Open images, audio, video, and PDFs.",
     category: "Create",
     icon: "image",
     keywords: ["music", "video", "photo", "pdf"],
@@ -73,7 +69,7 @@ export const builtinCatalog: CatalogApp[] = [
   {
     id: "lab",
     title: "Python Lab",
-    description: "Execute real Python, explore data, and generate reports.",
+    description: "Run Python and generate plots and reports.",
     category: "Build",
     icon: "flask",
     keywords: ["python", "code", "compute"],
@@ -81,7 +77,7 @@ export const builtinCatalog: CatalogApp[] = [
   {
     id: "data",
     title: "Data",
-    description: "Edit a CSV table, inspect numbers, and see the story.",
+    description: "Edit CSV tables and chart their data.",
     category: "Build",
     icon: "table",
     keywords: ["csv", "spreadsheet", "charts"],
@@ -89,7 +85,7 @@ export const builtinCatalog: CatalogApp[] = [
   {
     id: "editor",
     title: "Editor",
-    description: "A code editor for the files and applications on your desk.",
+    description: "Edit code and run HTML files.",
     category: "Build",
     icon: "code",
     keywords: ["monaco", "html", "javascript"],
@@ -97,7 +93,7 @@ export const builtinCatalog: CatalogApp[] = [
   {
     id: "agent",
     title: "Agent",
-    description: "Delegate work with your files, tools, and model of choice.",
+    description: "Delegate work using your files and tools.",
     category: "Build",
     icon: "agent",
     keywords: ["ai", "automation", "chatgpt"],
@@ -105,7 +101,7 @@ export const builtinCatalog: CatalogApp[] = [
   {
     id: "term",
     title: "Terminal",
-    description: "A real browser shell and the command bus for your OS.",
+    description: "Run shell commands and control the desktop.",
     category: "System",
     icon: "terminal",
     keywords: ["bash", "shell", "commands"],
@@ -113,8 +109,7 @@ export const builtinCatalog: CatalogApp[] = [
   {
     id: "files",
     title: "Files",
-    description:
-      "Organize, import, export, and inspect your browser filesystem.",
+    description: "Organize, import, and export files.",
     category: "System",
     icon: "folder",
     keywords: ["storage", "opfs", "download"],
@@ -131,7 +126,7 @@ export const builtinCatalog: CatalogApp[] = [
   {
     id: "settings",
     title: "Settings",
-    description: "Make the desktop yours and keep a portable backup.",
+    description: "Keyboard preferences, storage, and backups.",
     category: "System",
     icon: "settings",
     keywords: ["backup", "preferences", "keyboard"],
@@ -148,16 +143,14 @@ export const appTemplates: AppTemplate[] = [
   {
     slug: "pulse",
     title: "Pulse",
-    description:
-      "Compose a 16-step synth and drum pattern. Make a loop of your own.",
+    description: "Compose 16-step synth and drum patterns.",
     icon: "music",
     source: "/templates/pulse.html",
   },
   {
     slug: "image-studio",
     title: "Image Studio",
-    description:
-      "Crop, resize, recolor, and export images without uploading them.",
+    description: "Crop, resize, adjust, and export images.",
     icon: "image",
     source: "/templates/image-studio.html",
   },
@@ -220,9 +213,7 @@ export async function discoverApplications(): Promise<LocalApplication[]> {
     apps.push({
       slug: entry.name,
       title: metadata.title || entry.name,
-      description:
-        metadata.description ||
-        "A local HTML application. Open its source and make it yours.",
+      description: metadata.description || "A local HTML application.",
       path,
       directory: entry.path,
       registered: !!metadata.title,

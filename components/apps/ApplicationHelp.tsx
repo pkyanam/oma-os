@@ -187,15 +187,14 @@ export default function ApplicationHelp({ onBack }: { onBack: () => void }) {
           <ArrowLeft size={14} />
           Applications
         </button>
-        <strong>Start here · Help & diagnostics</strong>
+        <strong>Help & diagnostics</strong>
       </header>
       <div className="application-help-scroll">
         <section className="application-help-intro">
-          <h2>A working desktop. Model optional.</h2>
+          <h2>Getting started</h2>
           <p>
-            Write a note, run Python, make music, sketch a diagram, or build an
-            HTML app. Your work saves locally in this browser. Connecting a
-            model adds an agent; it is not a prerequisite.
+            Local apps work without a model. Open Agent to connect one when you
+            need it. Files save in this browser; export a backup to move them.
           </p>
           <div>
             <button onClick={() => launch("notes")}>
@@ -204,26 +203,25 @@ export default function ApplicationHelp({ onBack }: { onBack: () => void }) {
             </button>
             <button onClick={() => launch("agent")}>
               <Bot size={14} />
-              Configure an agent
+              Open Agent
             </button>
           </div>
         </section>
         <div className="application-help-guides">
           <section>
             <Keyboard size={18} />
-            <h3>Find and control anything</h3>
+            <h3>Keyboard & windows</h3>
             <p>
-              <kbd>Cmd+K</kbd> opens the launcher on Mac. Search apps, files,
-              and commands. Use the top bar’s workspace numbers and window
-              controls, or drag a divider to resize.
+              <kbd>Cmd+K</kbd> on Mac or <kbd>Ctrl+Space</kbd> opens the
+              launcher. Search apps, files, and commands. Drag dividers to
+              resize windows.
             </p>
             <p>
               Your desktop modifier is{" "}
               <strong>
                 {modifier === "alt" ? "Alt / Option" : "Control + Shift"}
               </strong>
-              . Host OS shortcuts may take priority; all essential controls have
-              clickable alternatives.
+              . Window controls are also available in the top bar.
             </p>
             <button onClick={() => useDesktop.getState().setOverlay("keys")}>
               All keyboard shortcuts
@@ -231,57 +229,46 @@ export default function ApplicationHelp({ onBack }: { onBack: () => void }) {
           </section>
           <section>
             <Download size={18} />
-            <h3>Keep a copy of your work</h3>
+            <h3>Export & backup</h3>
             <p>
-              Open <strong>Settings → Storage & backup</strong> for a portable
-              ZIP. It includes local files, installed app source, and oma.os
-              configuration. Provider keys and server login credentials are
-              excluded.
+              <strong>Settings → Storage & backup</strong> exports a ZIP of
+              files and app data. Credentials are excluded.
             </p>
-            <p>
-              Files also exports individual files and folders. Note, drawing,
-              image, and data apps offer their own export formats.
-            </p>
+            <p>For individual files or folders, use Export in Files.</p>
             <button onClick={() => launch("settings")}>Open Settings</button>
           </section>
           <section>
             <Code2 size={18} />
-            <h3>Apps are editable files</h3>
+            <h3>Edit local apps</h3>
             <p>
-              Add Pulse, Image Studio, or Regex Lab from Applications. Their
-              source lands in <code>/home/guest/Applications</code>. Use the
-              source button to edit HTML, then run it in Browser.
+              Added apps live in <code>/home/guest/Applications</code>. Open
+              their source in Editor and select Run to test changes.
             </p>
-            <p>
-              Desktop layout and open app paths restore on reload. Watch each
-              app’s save state before leaving, and export work you want to keep.
-            </p>
+
             <button onClick={() => launch("files", "/home/guest/Applications")}>
               Open application files
             </button>
           </section>
           <section>
             <TerminalSquare size={18} />
-            <h3>A shared surface for agents</h3>
+            <h3>Agent controls</h3>
             <p>
-              The terminal and configured agent use the same desktop command bus
-              and filesystem. Start with <code>oma help</code>,{" "}
-              <code>oma apps</code>, and <code>oma window list</code>.
+              In Terminal, use <code>oma help</code> for commands and{" "}
+              <code>oma window list</code> to inspect open windows.
             </p>
             <p>
-              The local skill explains paths and controls. Agent tools show
-              their activity and ask for approval before replacing existing
-              files.
+              The agent guide documents file access and approvals. Session
+              Activity lists recent desktop events.
             </p>
             <button onClick={() => launch("editor", "/.oma/SKILL.md")}>
-              Read the local agent guide
+              Agent guide
             </button>
             <button onClick={() => launch("activity")}>Session activity</button>
           </section>
         </div>
         <section className="application-diagnostics">
           <div className="applications-section">
-            <h2>What is available right now</h2>
+            <h2>Diagnostics</h2>
             <div>
               <button
                 disabled={checking}

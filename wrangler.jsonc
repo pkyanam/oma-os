@@ -1,0 +1,72 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "oma-os",
+  "main": "cloudflare/index.ts",
+  "compatibility_date": "2026-09-12",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "assets": {
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": [
+      "/api/*",
+      "/runtime/pyodide/*"
+    ]
+  },
+  "observability": {
+    "enabled": true
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "AUTH_SESSIONS",
+        "class_name": "AuthSession"
+      },
+      {
+        "name": "BROWSER_SESSIONS",
+        "class_name": "BrowserSession"
+      },
+      {
+        "name": "AI_QUOTA",
+        "class_name": "AIQuota"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "AuthSession"
+      ]
+    },
+    {
+      "tag": "v2",
+      "new_sqlite_classes": [
+        "BrowserSession"
+      ]
+    },
+    {
+      "tag": "v3",
+      "new_sqlite_classes": [
+        "AIQuota"
+      ]
+    }
+  ],
+  "ratelimits": [
+    {
+      "name": "API_LIMITER",
+      "namespace_id": "902617413",
+      "simple": {
+        "limit": 30,
+        "period": 60
+      }
+    }
+  ],
+  "browser": {
+    "binding": "BROWSER"
+  },
+  "ai": {
+    "binding": "AI"
+  }
+}

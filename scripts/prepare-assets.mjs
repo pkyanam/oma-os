@@ -2,6 +2,8 @@ import { cp, mkdir, rm } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { patchMonacoSecurity } from "./patch-monaco-security.mjs";
 import { copyRuntimeClosure } from "./static-assets.mjs";
+import { patchPromisePool } from './patch-promise-pool.mjs';
+await patchPromisePool();
 // These directories contain generated upstream assets only. Replace them so
 // dependency upgrades cannot leave old, unused, or vulnerable bundles served.
 for (const path of [
@@ -36,3 +38,7 @@ await copyRuntimeClosure(
   fileURLToPath(new URL("../public/pglite", import.meta.url)),
   ["index.js", "pglite.wasm", "pglite.data", "initdb.wasm"],
 );
+
+// Optional transport compression; retain raw .data as a browser compatibility fallback.
+const { compressPGlite } = await import("./compress-pglite.mjs");
+await compressPGlite();

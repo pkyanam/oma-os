@@ -1,12 +1,15 @@
 /* PGlite runs only in this dedicated worker. No remote database or API key. */
 import { PGlite } from "/pglite/index.js";
+import { loadPGliteBundle } from "/workers/pglite-bundle.js";
 let db;
 const quote = (name) => '"' + name.replaceAll('"', '""') + '"';
 self.onmessage = async ({ data }) => {
   const { id, kind } = data;
   try {
     if (kind === "init") {
+      const fsBundle = await loadPGliteBundle();
       db = await PGlite.create({
+        ...(fsBundle ? { fsBundle } : {}),
         dataDir: "memory://",
         ...(data.snapshot ? { loadDataDir: data.snapshot } : {}),
       });

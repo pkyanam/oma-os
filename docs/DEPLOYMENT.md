@@ -1,20 +1,95 @@
 # Deploying oma.os
 
-oma.os is one Next.js application with browser-side apps and small bundled Node services. It does not require a separate authentication project or a VM for desktop apps. Interactive website rendering optionally launches Chromium on the server.
+**Primary deployment: [oma.os on Cloudflare](https://oma-os.preetham-981.workers.dev).** Vite builds the client desktop; Workers serves APIs and static assets. Node/Next and Vercel remain separate supported targets with different capabilities.
 
 ## Capability matrix
 
-| Capability                                 | Persistent Node host                        | Included Docker configuration   | Vercel                                          |
-| ------------------------------------------ | ------------------------------------------- | ------------------------------- | ----------------------------------------------- |
-| Desktop, OPFS files, editor, local apps    | Yes                                         | Yes                             | Yes                                             |
-| Direct CORS-enabled model provider         | Yes                                         | Yes                             | Yes                                             |
-| ChatGPT device authorization               | Local encrypted store or Redis              | Persistent auth volume or Redis | Redis plus a stable secret required             |
-| Document browser / permitted iframe embeds | Yes                                         | Yes                             | Yes                                             |
-| Interactive Chromium                       | Opt-in in production                        | Enabled in Compose              | Disabled: sessions require a persistent process |
-| External Chromium via CDP                  | Optional with a reachable public-only proxy | Operator configuration required | Not enabled                                     |
-| Server filesystem persistence              | Operator-managed                            | Auth volume                     | Do not rely on ephemeral function files         |
+| Capability | Cloudflare (primary) | Persistent Node / Docker | Vercel (Next) |
+| --- | --- | --- | --- |
+| Desktop, OPFS, local app runtimes | Yes | Yes | Yes |
+| Direct CORS model provider | Yes | Yes | Yes |
+| ChatGPT authorization | SQLite auth Durable Objects + secret | Encrypted local store or Redis | Redis + stable secret |
+| Interactive websites inside OS | Managed Browser Run + Live View | Local/remote Chromium | Unavailable |
+| Document browser / permitted embeds | Yes | Yes | Yes |
+| Python runtime gateway | Hash-verified lazy Cache API | Same-origin gateway | Same-origin gateway |
+| Cloud file backup/sync | Not implemented | Not implemented | Not implemented |
 
-Cloudflare Workers is **not supported by a provided deployment adapter**. The current Node HTTP, TCP, DNS, filesystem and Chromium services cannot simply be copied into a Worker. A future deployment can separate the browser-native desktop from durable Node services; that architecture is not implemented here.
+Files remain in each browser's OPFS. Server auth storage and remote browser state are distinct from desktop files. Changing from localhost or Vercel to Cloudflare creates a separate filesystem; export and restore a ZIP to move work.
+
+## Cloudflare setup
+
+Requires Node.js 22+, Git, and a Cloudflare account with access to the configured services. The published deployment was verified on an **already existing Workers Paid plan**; no plan upgrade was performed. A free account has smaller Browser Run allowances. Check [current service pricing](CLOUDFLARE.md) before making your deployment public.
+
+```sh
+npm ci
+npx wrangler login
+npx wrangler secret put LWC_SECRET
+npm run deploy:cloudflare
+```
+
+Enter a stable random encryption secret at the prompt; generate one with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`. Keep it in your secret manager. Do not place it in Vite variables, source, or static assets. `npm ci` prepares licensed runtime assets and applies the checked Monaco security patch.
+
+`deploy:cloudflare` runs `vite build && wrangler deploy`. The Cloudflare Vite plugin produces the client and Worker outputs and deployment configuration. Use this explicit target: generic framework detection can select Next.js because that alternative remains in the repository.
+
+```sh
+npm run dev:cloudflare
+npm run build:cloudflare
+npm run preview:cloudflare
+```
+
+Development uses `http://localhost:3018` through the Vite Cloudflare plugin. Local emulation is not proof of access to the account's managed browser. Configure secrets for the relevant environment and test remote services on your deployed origin. Local Node/Next development separately uses `npm run dev` at port 3017.
+
+### Request path and bindings
+
+```text
+Browser -> Workers Static Assets (Vite client)
+        -> /api/* -> cloudflare/index.ts
+                     AUTH_SESSIONS -> AuthSession (SQLite Durable Object)
+                     BROWSER_SESSIONS -> BrowserSession (SQLite Durable Object)
+                     BROWSER -> managed Chromium + embedded Live View
+                     AI_QUOTA -> AIQuota (atomic usage reservations)
+                     AI -> Workers AI (explicitly selected model)
+                     API_LIMITER -> native rate limiting
+        -> /runtime/pyodide/* -> pinned manifest -> verified stream -> Cache API
+```
+
+`wrangler.jsonc` contains `ASSETS`, auth/browser/quota Durable Object bindings and SQLite migrations (`v1`, `v2`, `v3`), the `BROWSER` and `AI` bindings, `API_LIMITER`, and observability. Keep migration history when updating existing deployments. Static assets bypass API execution; `/api/*` and `/runtime/pyodide/*` run the Worker first. No Redis or separately hosted Node sidecar is needed for the Cloudflare profile.
+
+Authentication uses the community Login with ChatGPT SDK; it is not an official OpenAI SDK. A healthy configured route does not establish account eligibility or successful paid model inference. Provider-key mode remains available for compatible CORS endpoints.
+
+Managed website sessions use owner-scoped coordination and temporary Live View access. Live View is a Cloudflare beta feature. Do not publish session URLs or log their tokens. Normal site authentication and bot challenges still apply. The Node proxy's TCP/DNS implementation is not deployed to Cloudflare; managed Browser Run replaces that runtime.
+
+**Not provisioned:** R2 is disabled on the current account and requires dashboard enablement (API error 10042). No cloud file backup, AI Gateway, D1, or background Agents SDK execution is implied by this deployment. The [architecture catalog](CLOUDFLARE.md) describes these as optional future work.
+
+### Workers AI mode
+
+The optional model is `@cf/zai-org/glm-4.7-flash`, selected explicitly in Agent. It requires `AI`, `AI_QUOTA`, and a stable `LWC_SECRET` of at least 32 characters. ChatGPT sign-in establishes account identity; this mode sends inference to Cloudflare and charges the deployment account. It does not consume ChatGPT subscription model access.
+
+`cloudflare/ai.ts` defines these coordinated UTC-day reservation limits:
+
+| Budget | Per account | Entire deployment |
+| --- | ---: | ---: |
+| Calls | 16 | 64 |
+| Input bytes | 262,144 | 1,048,576 |
+| Reserved output tokens | 32,768 | 131,072 |
+
+Each request permits at most 262,144 body bytes and 2,048 output tokens. Concurrency is limited to one active request per account and four per deployment. Reservations are atomic in one quota Durable Object; failed/cancelled calls are intentionally not refunded. Stored quota state contains hashed account identifiers, counters, and temporary leases, not prompts. The model service still processes submitted text; do not equate quota storage policy with provider retention policy. These application budgets constrain usage but are not a currency-denominated billing guarantee.
+
+The implementation supports text/tool messages. It does not establish that a particular hosted inference request succeeded: verify with an authenticated account after deployment, and preserve the direct-provider alternative.
+
+### Verify the deployed origin
+
+Check `/api/health`, `/api/agent-config`, and `/api/browser-runtime?capabilities=1`. Then test actual website navigation and controls, login/device authorization with your account, local file persistence, Python including NumPy, SQL queries, and drawing import/export. Capability responses alone do not prove model inference or browser rendering. Confirm session ownership with separate browser contexts.
+
+Run the deployment smoke explicitly:
+
+```sh
+node scripts/smoke-cloudflare.mjs https://oma-os.preetham-981.workers.dev
+```
+
+It checks health, readable pages, private-address denial, browser capabilities, and independent anonymous sign-in initialization. It creates two pending login sessions and logs both out in cleanup; it does not authenticate an account or call a paid model.
+
+Use Workers observability for errors and resource usage while excluding credentials and private content. Native rate limiting is not a strict globally coordinated budget cap. Browser time, concurrency, storage, and external model usage can incur charges. See [performance notes](PERFORMANCE.md) for static sizes, compression verification, and cache behavior.
 
 ## Persistent Node installation
 
@@ -116,7 +191,7 @@ Before upgrading:
 3. Reinstall Chromium if the Playwright version changed, and update the Docker runtime version together.
 4. Retest sign-in, local file persistence and website rendering on the actual deployment host.
 
-PGlite, Excalidraw fonts and editor assets are self-hosted. Python Lab currently downloads its pinned Pyodide runtime on first use. Provider calls, remote websites and initial Python loading require outbound network access. A successful deployment does not imply fully offline startup.
+PGlite, Excalidraw fonts and editor assets are self-hosted. Python Lab fetches pinned Pyodide 314.0.6 and approved packages through the same-origin verified runtime gateway on first use. Provider calls, remote websites and initial Python loading require outbound network access. A successful deployment does not imply fully offline startup.
 
 ### Standalone dependency tracing
 

@@ -1,5 +1,5 @@
 // Pinned runtime. Executed only after the user chooses Run in Python Lab.
-const INDEX = "https://cdn.jsdelivr.net/pyodide/v314.0.6/full/";
+const INDEX = new URL("/runtime/pyodide/v314.0.6/", self.location.origin).href;
 let runtime;
 let running = false;
 let outputSize = 0;

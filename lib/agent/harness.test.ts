@@ -75,34 +75,41 @@ test("provider errors are surfaced without orphaned response promises", async ()
 });
 test("streams an answer and returns replayable model history and usage", async () => {
   const model = new MockLanguageModelV4({
-    doStream: async () => ({
-      stream: new ReadableStream({
-        start(controller) {
-          controller.enqueue({ type: "stream-start", warnings: [] });
-          controller.enqueue({ type: "text-start", id: "answer" });
-          controller.enqueue({
-            type: "text-delta",
-            id: "answer",
-            delta: "Hello",
-          });
-          controller.enqueue({ type: "text-end", id: "answer" });
-          controller.enqueue({
-            type: "finish",
-            finishReason: { unified: "stop", raw: "stop" },
-            usage: {
-              inputTokens: {
-                total: 12,
-                noCache: 12,
-                cacheRead: 0,
-                cacheWrite: 0,
+    doStream: async ({ tools }) => {
+      assert.equal(
+        tools?.length ?? 0,
+        0,
+        "disabled tools must not expose web or desktop capabilities",
+      );
+      return {
+        stream: new ReadableStream({
+          start(controller) {
+            controller.enqueue({ type: "stream-start", warnings: [] });
+            controller.enqueue({ type: "text-start", id: "answer" });
+            controller.enqueue({
+              type: "text-delta",
+              id: "answer",
+              delta: "Hello",
+            });
+            controller.enqueue({ type: "text-end", id: "answer" });
+            controller.enqueue({
+              type: "finish",
+              finishReason: { unified: "stop", raw: "stop" },
+              usage: {
+                inputTokens: {
+                  total: 12,
+                  noCache: 12,
+                  cacheRead: 0,
+                  cacheWrite: 0,
+                },
+                outputTokens: { total: 2, text: 2, reasoning: 0 },
               },
-              outputTokens: { total: 2, text: 2, reasoning: 0 },
-            },
-          });
-          controller.close();
-        },
-      }),
-    }),
+            });
+            controller.close();
+          },
+        }),
+      };
+    },
   });
   const events: HarnessEvent[] = [];
   const history = await runAgent(

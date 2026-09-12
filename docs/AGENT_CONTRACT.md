@@ -4,7 +4,7 @@ This document describes the implemented built-in agent interface. The runtime so
 
 ## Discover, inspect, act, verify
 
-The built-in model receives three tools: `desktop`, `filesystem` and `read_only_shell`. They exist only when desktop tools are enabled. Call the desktop tool with an argument vector, without the `oma` prefix:
+The built-in model receives four tools: `desktop`, `filesystem`, `read_only_shell` and `read_web_page`. They exist only when desktop tools are enabled. Call the desktop tool with an argument vector, without the `oma` prefix:
 
 ```json
 {"argv":["capabilities"]}
@@ -94,3 +94,25 @@ The agent saves local conversation archives, visible tool calls/results and part
 `contractVersion` is independent of the desktop's marketing version. Compatible additions can add commands/fields; consumers should ignore unknown optional fields. Removing or changing command meanings requires a major contract revision. App IDs come from the live registry and may expand between builds.
 
 Not implemented: WebMCP, event subscriptions, remote tool access, standard per-app adapters, selections/unsaved buffers, agent Python or SQL execution, browser DOM extraction, agent-to-agent handoff and model-controlled approvals. The Python/SQL isolation proposal in `research-agent-compute.md` is research only. Do not advertise any of these as usable tools.
+
+
+## Public page research
+
+`read_web_page({"url":"https://example.com"})` retrieves public static HTML through
+the existing document gateway. Results include final `sourceURL`, title, up to
+24,000 characters of text, truncation status and an explicit untrusted-reference
+label. Cite the returned URL. This is not search, live browser DOM extraction or
+authenticated browsing; JavaScript content may be absent. Requests omit browser
+credentials and never execute page scripts or load its images. The existing
+Agent Settings tools toggle disables this tool along with other model tools.
+
+## Optional hosted Workers AI connection
+
+Model & connection offers an explicit Workers AI mode where enabled by the
+Cloudflare deployment. It uses `@cf/zai-org/glm-4.7-flash`, the same agent tool
+loop and a 2,048-token response limit. ChatGPT sign-in establishes session
+identity; inference consumes the deployment's Workers AI allowance, not the
+user's ChatGPT-plan model quota. It requires no provider key and forwards no
+bearer key. Shared daily limits can stop a run. There is no automatic provider
+fallback or automatic hosted-request retry. ChatGPT-plan and direct-key modes
+remain separate explicit choices.

@@ -46,3 +46,7 @@ These are researched candidates, not installed or advertised as working applicat
 ## Validation
 
 `lib/integrations/database.test.ts` executes real PGlite SQL, imports injection-shaped CSV values using parameters, and restores a compressed checkpoint into a second database. Drawing tests verify native scene validation. Browser integration tests exercise the actual Excalidraw UI and SQL worker; see the test run results for the current build rather than treating this document as a claim that every browser/device has passed.
+
+## Vite and Monaco compatibility
+
+`es6-promise-pool@2.5.0`, used by Excalidraw, checks for a global AMD loader before assigning its CommonJS export. Monaco installs such a loader. In Vite's dependency and production bundles this can cause PromisePool to register with Monaco instead of exporting its constructor. `scripts/patch-promise-pool.mjs` generates a Vite-only CommonJS compatibility copy under `node_modules/.cache/oma`, with the AMD branch disabled. The implementation remains upstream code; the generator verifies the exact package version and SHA-256 and embeds its MIT notice. A source change fails preparation until reviewed. No global loader is removed or disabled. See the [upstream UMD wrapper](https://github.com/timdp/es6-promise-pool/blob/master/es6-promise-pool.js) and [Vite resolve aliases](https://vite.dev/config/shared-options#resolve-alias). Regression tests keep Monaco loaded while importing/exporting Excalidraw scenes and assert zero runtime errors.

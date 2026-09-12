@@ -456,8 +456,9 @@ export default function Lab({
         {status}
       </div>
       <div className={styles.footnote}>
-        Python/WASM · first run downloads Pyodide from jsDelivr. Run trusted
-        code only: worker code can use browser networking. Stop resets memory.{" "}
+        Python/WASM · runtime downloads on first run through this app’s cached
+        asset service. Run trusted code only: worker code can use browser
+        networking. Stop resets memory.{" "}
         {imports.length > 0 ? `${imports.length} file(s) queued.` : ""}
       </div>
     </section>

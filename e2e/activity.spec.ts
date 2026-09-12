@@ -19,7 +19,7 @@ test("Activity reports session operations, filters, exports safe metadata and cl
   await page.keyboard.press("Enter");
   await expect(
     page.getByRole("region", { name: "Terminal window", exact: true }),
-  ).toHaveCount(1);
+  ).toHaveCount(0);
   await activity.getByText("Session activity", { exact: true }).click();
   await page.keyboard.press("Alt+f");
   await expect(activity).toContainText("Opened Terminal");
@@ -94,7 +94,7 @@ test("Applications diagnostics report real local capability without model calls"
     .getByRole("button", { name: "Help & diagnostics" })
     .click();
   await expect(
-    applications.getByRole("heading", { name: "What is available right now" }),
+    applications.getByRole("heading", { name: "Diagnostics" }),
   ).toBeVisible();
   await expect(
     applications.getByRole("button", { name: "Run checks", exact: true }),

@@ -214,14 +214,14 @@ export default function Overlays() {
               <small>0.1.0</small>
             </div>
             <p className="welcome-lead">
-              A browser desktop with Omarchy’s habits.
+              Your workspace for building with agents.
             </p>
             <div className="welcome-facts">
-              <p>
+              <p className="welcome-keyboard">
                 <kbd>⌘K</kbd> opens the launcher on Mac. <kbd>Ctrl+Space</kbd>{" "}
                 works too.
               </p>
-              <p>
+              <p className="welcome-keyboard">
                 <kbd>Alt+←↓↑→</kbd> moves focus. <kbd>Alt+1…9</kbd> switches
                 workspaces.
               </p>
@@ -229,7 +229,8 @@ export default function Overlays() {
                 Your files stay in this browser. Web pages connect when you open
                 them.
               </p>
-              <p>This is not Omarchy Linux. It is the desk, in a tab.</p>
+              <p className="welcome-touch">Tap the launcher in the bottom bar to open apps. Use the window menu to resize, move or close them.</p>
+              <p>Open Agent to connect a model and build something here.</p>
             </div>
             <button
               autoFocus
@@ -241,7 +242,7 @@ export default function Overlays() {
             </button>
             <div className="welcome-bottom">
               <span>Local files. Your workspace.</span>
-              <span>Alt+K for all keys</span>
+              <span className="welcome-keyboard">Alt+K for all keys</span>
             </div>
           </div>
         ) : overlay === "theme" ? (
@@ -321,11 +322,11 @@ export default function Overlays() {
               <kbd>esc</kbd>
             </div>
             <div className="about-copy">
-              <h2>A browser desktop with Omarchy’s habits.</h2>
+              <h2>Your workspace for building with agents.</h2>
               <p>
-                Alt is Super.
+                Local files, a working shell, native apps and an agent that can use them.
                 <br />
-                This is not Linux. It is the desk.
+                Inspired by Omarchy’s keyboard-driven desktop.
               </p>
               <p className="muted">
                 Version 0.1.0 · MIT
@@ -358,7 +359,7 @@ function Picker({ menu }: { menu: boolean }) {
   const bus = (argv: string[]) => {
     useDesktop.getState().setOverlay(null);
     void oma(argv, { store: useDesktop, fs }).then((r) => {
-      if (r.message) useDesktop.getState().notify(r.message);
+      if (!r.ok && r.message) useDesktop.getState().notify(r.message);
     });
   };
   const all = useMemo<Row[]>(

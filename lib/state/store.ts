@@ -37,30 +37,11 @@ const initial = () => {
     Array.from({ length: 9 }, (_, i) => [i + 1, { layout: null, focus: null }]),
   );
   workspaces[1] = {
-    layout: {
-      type: "split",
-      dir: "row",
-      ratio: 0.4,
-      a: { type: "leaf", id: "term-1" },
-      b: {
-        type: "split",
-        dir: "col",
-        ratio: 0.62,
-        a: { type: "leaf", id: "editor-1" },
-        b: { type: "leaf", id: "files-1" },
-      },
-    },
-    focus: "term-1",
+    layout: { type: "leaf", id: "apps-1" },
+    focus: "apps-1",
   };
   const tiles: Record<string, Tile> = {
-    "term-1": { app: "term", title: "Terminal", createdAt: 0 },
-    "editor-1": {
-      app: "editor",
-      title: "Editor",
-      createdAt: 0,
-      path: "/.oma/SKILL.md",
-    },
-    "files-1": { app: "files", title: "Files", createdAt: 0 },
+    "apps-1": { app: "apps", title: "Applications", createdAt: 0 },
   };
   return {
     workspaces,
