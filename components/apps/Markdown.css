@@ -1,0 +1,163 @@
+.oma-markdown {
+  font: 13px/1.75 var(--font-ui);
+  overflow-wrap: anywhere;
+  user-select: text;
+  min-width: 0;
+}
+.oma-markdown > :first-child {
+  margin-top: 0;
+}
+.oma-markdown h1 {
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.35;
+  margin: 5px 0 20px;
+}
+.oma-markdown h2 {
+  font-size: 18px;
+  font-weight: 500;
+  margin: 22px 0 10px;
+}
+.oma-markdown h3 {
+  font-size: 15px;
+  margin: 16px 0 8px;
+}
+.oma-markdown p {
+  margin: 8px 0;
+}
+.oma-markdown ul,
+.oma-markdown ol {
+  padding-left: 24px;
+  margin: 10px 0;
+}
+.oma-markdown li {
+  margin: 3px 0;
+}
+.oma-markdown blockquote {
+  border-left: 2px solid var(--accent);
+  padding-left: 12px;
+  margin: 12px 0;
+  color: var(--fg-dim);
+}
+.oma-markdown code {
+  font: 12px var(--font-mono);
+  color: var(--cyan);
+  background: var(--bg-el);
+  padding: 2px 4px;
+}
+.oma-markdown .oma-md-code {
+  position: relative;
+  background: var(--bg-dim);
+  border: 1px solid var(--border);
+  margin: 14px 0;
+  min-width: 0;
+}
+.oma-markdown .oma-md-code > button {
+  position: absolute;
+  right: 4px;
+  top: 3px;
+  font: 10px var(--font-mono);
+  padding: 2px 5px;
+  color: var(--fg-mute);
+  background: var(--bg-dim);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  min-height: 22px;
+  min-width: 0;
+}
+.oma-markdown pre {
+  overflow: auto;
+  margin: 0;
+  padding: 30px 12px 12px;
+  font: 12px/1.6 var(--font-mono);
+  white-space: pre;
+  tab-size: 2;
+}
+.oma-markdown pre code {
+  padding: 0;
+  background: transparent;
+  color: var(--fg);
+}
+.oma-markdown .oma-md-link,
+.oma-markdown .oma-md-file {
+  display: inline;
+  border: 0;
+  padding: 0;
+  min-height: 0;
+  min-width: 0;
+  background: transparent;
+  color: var(--accent);
+  text-decoration: underline;
+  font: inherit;
+  vertical-align: baseline;
+  cursor: pointer;
+  white-space: normal;
+  text-align: inherit;
+}
+.oma-markdown .oma-md-image {
+  display: block;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-el);
+  color: var(--accent);
+  cursor: pointer;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.oma-markdown .contains-task-list {
+  list-style: none;
+  padding-left: 0;
+}
+.oma-markdown .task-list-item input {
+  margin-right: 8px;
+  accent-color: var(--accent);
+  vertical-align: middle;
+}
+.oma-markdown .task-list-item:has(> input:checked) {
+  color: var(--fg-mute);
+}
+.oma-markdown .oma-md-table {
+  overflow: auto;
+  max-width: 100%;
+  margin: 12px 0;
+}
+.oma-markdown table {
+  border-collapse: collapse;
+  min-width: 100%;
+  font-size: 12px;
+}
+.oma-markdown td,
+.oma-markdown th {
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+.oma-markdown th {
+  background: var(--bg-el);
+  font-weight: 500;
+}
+.oma-markdown hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 20px 0;
+}
+.oma-markdown del {
+  color: var(--fg-mute);
+}
+@media (pointer: coarse) {
+  .oma-markdown {
+    font-size: 15px;
+  }
+  .oma-markdown .task-list-item input {
+    width: 20px;
+    height: 20px;
+  }
+  .oma-markdown .task-list-item {
+    min-height: 34px;
+  }
+  .oma-markdown .oma-md-code > button {
+    min-height: 32px;
+    min-width: 44px;
+  }
+}

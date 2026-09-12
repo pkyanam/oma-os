@@ -1,0 +1,322 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 12px;
+  container-type: inline-size;
+  overflow: hidden;
+}
+.toolbar,
+.controls,
+.path,
+.summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  min-width: 0;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border);
+}
+.toolbar {
+  background: var(--bg-dim);
+  flex-shrink: 0;
+}
+.toolbar strong {
+  font-weight: 500;
+  white-space: nowrap;
+}
+.spacer {
+  flex: 1;
+}
+.app button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 28px;
+  border: 1px solid var(--border);
+  padding: 4px 8px;
+  background: transparent;
+  color: var(--fg-dim);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.app button:hover:not(:disabled) {
+  background: var(--bg-hl);
+  color: var(--accent);
+}
+.app button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.app input,
+.app select {
+  min-width: 0;
+  background: var(--bg-dim);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  padding: 6px 8px;
+  font: inherit;
+}
+.app input:focus,
+.app select:focus,
+.app textarea:focus,
+.app button:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+.path input,
+.controls > input:not([type="file"]) {
+  flex: 1;
+  min-width: 100px;
+  font-family: var(--font-mono);
+}
+.path {
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+.labBody {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  min-height: 0;
+  flex: 1;
+}
+.codePane,
+.outputPane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.codePane {
+  border-right: 1px solid var(--border);
+}
+.paneLabel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--fg-mute);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  padding: 6px 10px;
+  min-height: 32px;
+}
+.paneLabel span {
+  letter-spacing: 0;
+}
+.paneLabel button {
+  min-height: 20px;
+  padding: 0 5px;
+  font-size: 10px;
+}
+.codePane textarea {
+  flex: 1;
+  min-height: 80px;
+  width: 100%;
+  resize: none;
+  background: var(--bg);
+  color: var(--fg);
+  border: 0;
+  padding: 8px 12px;
+  font: 12px/1.7 var(--font-mono);
+  white-space: pre;
+  overflow: auto;
+  tab-size: 4;
+  user-select: text;
+}
+.outputPane pre {
+  flex: 1;
+  min-height: 70px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 0;
+  padding: 8px 12px;
+  color: var(--fg-dim);
+  font: 12px/1.7 var(--font-mono);
+  user-select: text;
+}
+.status {
+  padding: 6px 10px;
+  background: var(--bg-dim);
+  border-top: 1px solid var(--border);
+  font: 10px/1.5 var(--font-mono);
+  overflow-wrap: anywhere;
+  color: var(--cyan);
+}
+.footnote {
+  padding: 5px 10px;
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--fg-mute);
+  overflow-wrap: anywhere;
+}
+.artifacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 10px;
+  border-top: 1px solid var(--border);
+  max-height: 140px;
+  overflow: auto;
+}
+.artifacts > span {
+  width: 100%;
+  color: var(--fg-mute);
+  font-size: 10px;
+}
+.artifacts small {
+  color: var(--fg-mute);
+}
+.tableArea {
+  min-height: 80px;
+  flex: 1;
+  overflow: auto;
+  user-select: text;
+}
+.tableArea table {
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 100%;
+  font: 12px var(--font-mono);
+}
+.tableArea th,
+.tableArea td {
+  padding: 0;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+.tableArea thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--bg-el);
+}
+.tableArea th > div {
+  display: flex;
+  align-items: center;
+}
+.tableArea input {
+  width: 140px;
+  min-height: 33px;
+  border: 0;
+  background: transparent;
+  border-radius: 0;
+}
+.tableArea th input {
+  font-weight: 500;
+  color: var(--accent);
+}
+.tableArea td:focus-within {
+  background: var(--bg-hl);
+}
+.tableArea th.rowNumber {
+  min-width: 38px;
+  padding: 5px 8px;
+  color: var(--fg-mute);
+  font-weight: 400;
+}
+.summary {
+  font: 11px var(--font-mono);
+  color: var(--fg-dim);
+  background: var(--bg-dim);
+}
+.summary label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.summary select {
+  max-width: 130px;
+}
+.empty {
+  padding: 20px;
+  color: var(--fg-mute);
+}
+.hidden {
+  display: none;
+}
+@container (max-width:650px) {
+  .labBody {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(120px, 1fr) minmax(90px, 0.8fr);
+  }
+  .codePane {
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .footnote {
+    max-height: 42px;
+    overflow: auto;
+  }
+  .summary {
+    gap: 8px;
+  }
+  .toolbar,
+  .controls {
+    gap: 5px;
+    padding: 6px;
+  }
+}
+@media (pointer: coarse) {
+  .app button {
+    min-height: 38px;
+  }
+  .app input,
+  .app select {
+    min-height: 38px;
+  }
+  .tableArea input {
+    font-size: 16px;
+    min-height: 42px;
+  }
+  .codePane textarea {
+    font-size: 14px;
+  }
+}
+.chartArea {
+  flex: 1;
+  min-height: 80px;
+  overflow: auto;
+  padding: 10px;
+}
+.chartRow {
+  display: grid;
+  grid-template-columns: minmax(50px, 110px) minmax(30px, 1fr) 65px;
+  gap: 10px;
+  align-items: center;
+  min-height: 30px;
+  font: 11px var(--font-mono);
+}
+.chartRow > span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--fg-dim);
+}
+.chartRow > div {
+  height: 12px;
+  background: var(--bg-el);
+}
+.chartRow i {
+  display: block;
+  height: 100%;
+  min-width: 1px;
+  opacity: 0.7;
+}
+.chartRow b {
+  text-align: right;
+  font-weight: 400;
+  color: var(--fg-dim);
+}
+.app button[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+}

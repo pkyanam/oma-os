@@ -1,0 +1,335 @@
+/* Desktop navigation remains usable independently of a client's dimensions. */
+.os-shell {
+  height: var(--desktop-viewport-height, 100dvh);
+}
+.os-shell .desktop {
+  height: calc(
+    var(--desktop-viewport-height, 100dvh) - var(--bar-h) - var(--dock-h)
+  );
+}
+.os-shell .scrim {
+  bottom: auto;
+  height: calc(var(--desktop-viewport-height, 100dvh) - var(--bar-h));
+}
+.os-shell .overlay {
+  max-height: calc(
+    var(--desktop-viewport-height, 100dvh) - var(--bar-h) - 24px
+  );
+}
+.os-shell .bar-left .window-control {
+  max-width: 180px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.window-control > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bar nav {
+  min-width: 0;
+}
+.bar-left > nav {
+  flex-shrink: 0;
+}
+.bar button {
+  min-height: 24px;
+}
+.overlay {
+  position: relative;
+  overflow-y: auto;
+  max-height: calc(100dvh - var(--bar-h) - 40px);
+  overscroll-behavior: contain;
+}
+.overlay-close {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  z-index: 2;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  color: var(--fg-mute);
+}
+.overlay-close:hover {
+  color: var(--fg);
+  background: var(--bg-hl);
+}
+.overlay-heading,
+.picker-search {
+  padding-right: 48px;
+}
+.overlay-heading > kbd,
+.picker-search > kbd {
+  display: none;
+}
+.overlay-heading > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.launcher-filters {
+  display: flex;
+  gap: 2px;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+.launcher-filters button {
+  min-height: 28px;
+  padding: 2px 9px;
+  flex-shrink: 0;
+  font-size: 10px;
+  color: var(--fg-mute);
+}
+.launcher-filters button[aria-pressed="true"] {
+  background: var(--bg-hl);
+  color: var(--accent);
+}
+.window-overview {
+  border-top: 1px solid var(--border);
+  padding: 12px 20px 16px;
+}
+.window-overview .picker-group {
+  padding: 0 0 10px;
+}
+.overview-workspaces {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 4px;
+  margin-bottom: 12px;
+}
+.overview-workspaces button {
+  border: 1px solid var(--border);
+  min-height: 44px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+}
+.overview-workspaces small {
+  color: var(--fg-mute);
+  font: 9px var(--font-mono);
+}
+.overview-workspaces [aria-current="page"] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.overview-windows {
+  max-height: 210px;
+  overflow-y: auto;
+}
+.overview-windows > button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 46px;
+  padding: 5px 8px;
+  text-align: left;
+}
+.overview-windows > button:hover,
+.overview-windows > button.current {
+  background: var(--bg-hl);
+}
+.overview-windows > button > span {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+.overview-windows strong {
+  font-size: 11px;
+  font-weight: 450;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.overview-windows small {
+  font-size: 9px;
+  color: var(--fg-mute);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gutter {
+  touch-action: none;
+}
+.gutter:focus-visible {
+  outline: 1px solid var(--accent);
+}
+.touch-window-list {
+  flex: 1;
+  display: flex;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  gap: 4px;
+}
+.touch-window-list > button {
+  max-width: 200px;
+  gap: 4px;
+}
+.touch-window-list > button > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dock-empty {
+  align-self: center;
+  color: var(--fg-mute);
+  font: 11px var(--font-mono);
+  padding: 0 10px;
+}
+.os-shell .touch-dock > button:nth-last-child(2) {
+  margin-left: 0;
+}
+@media (max-width: 1100px) {
+  .os-shell .bar-left .window-control {
+    max-width: 120px;
+  }
+  .bar-left .wordmark {
+    display: none;
+  }
+}
+@media (max-width: 900px) {
+  .touch-dock {
+    gap: 4px;
+    overflow: hidden;
+  }
+  .touch-window-list > button.selected {
+    background: var(--bg-hl);
+  }
+  .desktop {
+    min-height: 0;
+  }
+}
+@media (max-width: 600px) {
+  :root[data-theme] {
+    --bar-h: 44px;
+    --gap-out: 6px;
+  }
+  .os-shell .bar-left .window-control {
+    display: none;
+  }
+  .bar-left > nav {
+    flex: 1;
+    max-width: none;
+    overflow-x: auto;
+  }
+  .bar-left .quick-terminal {
+    margin-left: 4px;
+    flex-shrink: 0;
+  }
+  .bar-left {
+    overflow: hidden;
+  }
+  .workspace-button {
+    min-width: 36px;
+  }
+  .touch-dock {
+    padding-left: max(6px, env(safe-area-inset-left));
+    padding-right: max(6px, env(safe-area-inset-right));
+  }
+  .touch-dock > button {
+    width: 40px;
+    padding: 0;
+  }
+  .touch-window-list > button {
+    max-width: 160px;
+  }
+  .window-overview {
+    padding: 12px;
+  }
+  .overview-workspaces {
+    gap: 3px;
+  }
+  .overview-windows {
+    max-height: 180px;
+  }
+  .overlay-close {
+    width: 40px;
+    height: 40px;
+    top: 4px;
+    right: 4px;
+  }
+  .launcher-filters {
+    padding: 5px 8px;
+  }
+  .launcher-filters button {
+    min-height: 38px;
+  }
+  .picker-results {
+    max-height: 44dvh;
+  }
+  .picker-row {
+    min-height: 44px;
+  }
+  .welcome-brand {
+    padding-right: 24px;
+  }
+  .settings-example {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
+@media (pointer: coarse) {
+  .touch-dock > button {
+    min-width: 44px;
+  }
+  .os-shell .bar {
+    min-height: 44px;
+  }
+  :root[data-theme] {
+    --bar-h: 44px;
+  }
+  .bar .system-button,
+  .bar .workspace-button,
+  .bar .quick-terminal {
+    min-width: 44px;
+  }
+  .bar-left > nav {
+    overflow-x: auto;
+    flex-shrink: 1;
+    scrollbar-width: none;
+  }
+  .bar-left .bar-divider,
+  .bar-left .wordmark {
+    display: none;
+  }
+  .bar button,
+  .touch-dock button,
+  .window-actions > button,
+  .picker-row {
+    min-height: 44px;
+  }
+  .move-workspaces button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .move-workspaces {
+    flex-wrap: wrap;
+  }
+  .gutter-row::before {
+    content: "";
+    position: absolute;
+    inset: 0 -8px;
+  }
+  .gutter-col::before {
+    content: "";
+    position: absolute;
+    inset: -8px 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .os-shell *,
+  .os-shell *::before,
+  .os-shell *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

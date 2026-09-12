@@ -1,4 +1,11 @@
-import { oma, type BusContext, type OmaResult } from './bus';
-import { parse } from './parse';
-import { errorMessage } from '@/lib/fs/opfs';
-export async function command(input:string,ctx:BusContext):Promise<OmaResult>{try{const [cmd,...args]=parse(input);const ok=(message:string):OmaResult=>({ok:true,message});switch(cmd){case undefined:return ok('');case 'oma':return oma(args,ctx);case 'help':return ok('help  clear  date  echo  whoami  uname\ntheme  ws  launch  close  oma\nls [path]  cat <path>  touch <path>  rm <path>\nmkdir <path>  edit <path>\n\nFiles are local. Paths are relative to /home/guest.\nType oma help for desktop commands.');case 'clear':return ok('\x1b[2J\x1b[3J\x1b[H');case 'date':return ok(new Date().toLocaleString());case 'echo':return ok(args.join(' '));case 'whoami':return ok('guest');case 'uname':return ok('oma.os v1 (web)');case 'theme':case 'ws':case 'launch':case 'close':return oma([cmd,...args],ctx);case 'ls':return oma(['fs','ls',...args],ctx);case 'cat':return oma(['fs','read',...args],ctx);case 'touch':case 'rm':case 'mkdir':if(!args[0])return {ok:false,message:`usage: ${cmd} <path>`};await ctx.fs[cmd](args[0]);ctx.store.getState().refreshFs();return ok('');case 'edit':if(!args[0])return {ok:false,message:'usage: edit <path>'};await ctx.fs.read(args[0]);ctx.store.getState().launch('editor',ctx.fs.normalize(args[0]));return ok(`opened ${ctx.fs.normalize(args[0])}`);default:return {ok:false,message:`command not found: ${cmd}`};}}catch(error){return {ok:false,message:errorMessage(error)};}}
+import type { BusContext, OmaResult } from "./bus";
+import { executeShell } from "@/lib/shell/client";
+
+/** One-shot entry for callers without an interactive terminal session. */
+export async function command(
+  input: string,
+  ctx: BusContext,
+): Promise<OmaResult> {
+  const result = await executeShell(input, ctx);
+  return { ok: result.exitCode === 0, message: result.stdout + result.stderr };
+}

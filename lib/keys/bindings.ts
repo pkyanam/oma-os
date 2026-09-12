@@ -1,3 +1,22 @@
 export const keybinds = [
- ['Alt+Space','Launcher'],['Ctrl+Space','Launcher (alternative)'],['Alt+Shift+Space','System menu'],['Alt+Enter','New terminal'],['Alt+W','Close focused window'],['Alt+1…9','Switch workspace'],['Alt+Shift+1…9','Move window to workspace'],['Alt+H / J / L','Focus left / down / right'],['Alt+Arrow keys','Focus in any direction'],['Alt+Shift+HJKL','Swap with neighbor'],['Alt+= / −','Grow / shrink window'],['Alt+F','Fullscreen window'],['Alt+A','Agent on workspace 3'],['Alt+E','Open editor'],['Alt+T','Cycle theme'],['Alt+K','Keyboard shortcuts'],['Ctrl+S','Save editor file'],['Escape','Dismiss overlay']
+  ["Alt+Space", "Launcher"],
+  ["Ctrl+Space", "Launcher (alternative)"],
+  ["Alt+Shift+Space", "System menu"],
+  ["Alt+Enter", "New terminal"],
+  ["Alt+Q / W", "Close focused window"],
+  ["Alt+1…9", "Switch workspace"],
+  ["Alt+Shift+1…9", "Move window to workspace"],
+  ["Alt+H / J / L", "Focus left / down / right"],
+  ["Alt+Arrow keys", "Focus in any direction"],
+  ["Alt+Shift+HJKL", "Swap with neighbor"],
+  ["Alt+= / −", "Grow / shrink window"],
+  ["Alt+F", "Fullscreen window"],
+  ["Alt+[ / ]", "Previous / next window"],
+  ["Ctrl+`", "All windows and workspaces"],
+  ["Alt+A", "Agent on workspace 3"],
+  ["Alt+E", "Open editor"],
+  ["Alt+T", "Cycle theme"],
+  ["Alt+K", "Keyboard shortcuts"],
+  ["Ctrl+S", "Save editor file"],
+  ["Escape", "Dismiss overlay"],
 ];

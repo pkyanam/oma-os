@@ -1,0 +1,659 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" /><meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  /><title>Pulse — oma.os</title
+  ><style>
+    :root {
+      color-scheme: dark;
+      --bg: #1a1b26;
+      --dim: #16161e;
+      --el: #1f2335;
+      --hl: #292e42;
+      --fg: #c0caf5;
+      --mute: #a9b1d6;
+      --border: #3b4261;
+      --accent: #7aa2f7;
+      --green: #9ece6a;
+      --red: #f7768e;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font:
+        13px/1.5 ui-monospace,
+        SFMono-Regular,
+        Consolas,
+        monospace;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 15px 18px;
+      border-bottom: 1px solid var(--border);
+      background: var(--dim);
+    }
+    h1 {
+      font-size: 16px;
+      font-weight: 500;
+      margin: 0;
+    }
+    header small {
+      color: var(--mute);
+    }
+    main {
+      padding: 18px;
+      max-width: 1100px;
+      margin: auto;
+    }
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+      color: var(--fg);
+      border: 1px solid var(--border);
+      background: var(--dim);
+      border-radius: 0;
+    }
+    button {
+      padding: 7px 12px;
+      cursor: pointer;
+      min-height: 34px;
+    }
+    button:hover {
+      border-color: var(--accent);
+      background: var(--hl);
+    }
+    button:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+    input,
+    select {
+      padding: 6px;
+      min-width: 0;
+    }
+    textarea {
+      padding: 10px;
+      resize: vertical;
+      min-width: 0;
+      line-height: 1.6;
+    }
+    button:focus-visible,
+    input:focus,
+    textarea:focus,
+    select:focus {
+      outline: 1px solid var(--accent);
+      outline-offset: 1px;
+    }
+    label {
+      color: var(--mute);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin: 14px 0;
+    }
+    .panel {
+      border: 1px solid var(--border);
+      background: var(--dim);
+      padding: 14px;
+    }
+    .muted,
+    footer {
+      color: var(--mute);
+      font-size: 11px;
+    }
+    footer {
+      margin-top: 20px;
+      line-height: 1.7;
+    }
+    .status {
+      color: var(--accent);
+      min-height: 24px;
+      overflow-wrap: anywhere;
+    }
+    .grow {
+      flex: 1;
+    }
+    dialog {
+      width: min(620px, calc(100vw - 24px));
+      max-height: 85vh;
+      overflow: auto;
+      border: 1px solid var(--accent);
+      background: var(--bg);
+      color: var(--fg);
+      padding: 18px;
+    }
+    dialog::backdrop {
+      background: #0009;
+    }
+    dialog textarea {
+      width: 100%;
+      height: 220px;
+    }
+    dialog img {
+      max-width: 100%;
+      height: auto;
+    }
+    a {
+      color: var(--accent);
+    }
+    [hidden] {
+      display: none !important;
+    }
+    @media (max-width: 540px) {
+      main {
+        padding: 10px;
+      }
+      header {
+        padding: 12px;
+        flex-wrap: wrap;
+        gap: 4px 12px;
+      }
+      .controls {
+        gap: 7px;
+      }
+      .panel {
+        padding: 10px;
+      }
+    }
+    @media (pointer: coarse) {
+      button,
+      input,
+      select {
+        min-height: 42px;
+      }
+      textarea,
+      input[type="text"] {
+        font-size: 16px;
+      }
+    }
+
+    .grid-scroll {
+      overflow-x: auto;
+      padding-bottom: 8px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 90px repeat(16, minmax(25px, 1fr));
+      gap: 4px;
+      min-width: 650px;
+    }
+    .grid .name {
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      color: var(--mute);
+    }
+    .step {
+      padding: 0;
+      height: 34px;
+      min-height: 34px;
+      background: var(--el);
+    }
+    .step[aria-pressed="true"] {
+      background: #7aa2f744;
+      border-color: var(--accent);
+    }
+    .step.playhead {
+      outline: 1px solid var(--fg);
+      outline-offset: -3px;
+    }
+    .count {
+      text-align: center;
+      font-size: 10px;
+      color: var(--mute);
+    }
+    .count:nth-child(4n + 2) {
+      color: var(--accent);
+    }
+    input[type="range"] {
+      width: 110px;
+    }
+    #bpm {
+      width: 65px;
+    }
+    .legend {
+      display: flex;
+      justify-content: space-between;
+      color: var(--mute);
+      font-size: 11px;
+      margin: 8px 0;
+    }
+    @media (pointer: coarse) {
+      .step {
+        min-height: 42px;
+      }
+      .grid {
+        min-width: 820px;
+      }
+    }
+  </style>
+  <header>
+    <h1>Pulse</h1>
+    <small>A small machine for finding a groove</small>
+  </header>
+  <main>
+    <div class="controls">
+      <button id="play">Play</button><button id="stop" disabled>Stop</button
+      ><label
+        >Tempo
+        <input id="bpm" type="number" value="112" min="40" max="240" />
+        BPM</label
+      ><label
+        >Swing
+        <input id="swing" type="range" min="0" max="45" value="12" /><output
+          id="swing-value"
+          >12%</output
+        ></label
+      ><label
+        >Volume <input id="volume" type="range" min="0" max="100" value="35"
+      /></label>
+    </div>
+    <div class="controls">
+      <label
+        >Scale
+        <select id="scale">
+          <option value="minor">C minor pentatonic</option>
+          <option value="major">C major pentatonic</option>
+          <option value="dorian">D Dorian</option>
+        </select></label
+      ><label
+        >Voice
+        <select id="voice">
+          <option>sine</option>
+          <option>triangle</option>
+          <option>sawtooth</option>
+          <option>square</option>
+        </select></label
+      ><button id="starter">Starter groove</button
+      ><button id="random">Mutate melody</button
+      ><button id="clear">Clear</button>
+    </div>
+    <div class="panel">
+      <div class="legend">
+        <span>Tap cells to compose · 16 sixteenth notes</span
+        ><span id="position">Stopped</span>
+      </div>
+      <div class="grid-scroll">
+        <div
+          id="grid"
+          class="grid"
+          role="group"
+          aria-label="Step sequencer"
+        ></div>
+      </div>
+    </div>
+    <div class="controls">
+      <button id="export">Export pattern</button
+      ><button id="import">Import pattern</button
+      ><input
+        id="file"
+        type="file"
+        accept="application/json,.json"
+        hidden
+      /><span class="grow"></span
+      ><span class="muted"
+        >Synthesized sound. No samples, servers, or uploads.</span
+      >
+    </div>
+    <p id="status" class="status" role="status">
+      Press Play when you are ready to listen.
+    </p>
+    <footer>
+      Pattern changes stay in this window. Export JSON to keep your work. Space
+      starts/stops when you are not editing a field. Audio stops when this
+      document is hidden. Every sound is generated with Web Audio; volume starts
+      at 35%.
+    </footer>
+  </main>
+  <dialog id="dialog">
+    <h2>Pattern JSON</h2>
+    <p class="muted">
+      Copy this JSON into an oma.os file to keep it. Import accepts the same
+      format.
+    </p>
+    <textarea id="json" aria-label="Pattern JSON" spellcheck="false"></textarea>
+    <div class="controls">
+      <button id="copy">Copy / select all</button
+      ><button id="load">Load JSON</button><button id="close">Close</button>
+    </div>
+    <p id="dialog-status" class="status"></p>
+  </dialog>
+  <script>
+    function validatePattern(value) {
+      if (
+        value?.version !== 1 ||
+        !Array.isArray(value.steps) ||
+        value.steps.length !== 8 ||
+        value.steps.some(
+          (row) =>
+            !Array.isArray(row) ||
+            row.length !== 16 ||
+            row.some((cell) => typeof cell !== "boolean"),
+        )
+      )
+        throw Error("Expected a Pulse v1 pattern with 8 × 16 boolean steps.");
+      if (!Number.isFinite(value.bpm) || value.bpm < 40 || value.bpm > 240)
+        throw Error("Tempo must be between 40 and 240.");
+      if (
+        !["minor", "major", "dorian"].includes(value.scale) ||
+        !["sine", "triangle", "sawtooth", "square"].includes(value.voice)
+      )
+        throw Error("Unknown scale or voice.");
+      return {
+        version: 1,
+        steps: value.steps.map((r) => r.slice()),
+        bpm: value.bpm,
+        scale: value.scale,
+        voice: value.voice,
+        swing: Math.max(0, Math.min(45, Number(value.swing) || 0)),
+      };
+    }
+    function stepDuration(bpm, swing, index) {
+      return (60 / bpm / 4) * (index % 2 ? 1 - swing / 100 : 1 + swing / 100);
+    }
+    const $ = (id) => document.getElementById(id);
+    const scales = {
+      minor: [72, 70, 67, 65, 63],
+      major: [72, 69, 67, 64, 62],
+      dorian: [74, 72, 69, 67, 65],
+    };
+    let steps = Array.from({ length: 8 }, () => Array(16).fill(false));
+    let audio = null,
+      master = null,
+      timer = null,
+      playing = false,
+      step = 0,
+      next = 0,
+      drawTimers = [];
+    function starter() {
+      steps = Array.from({ length: 8 }, () => Array(16).fill(false));
+      [0, 6, 10, 14].forEach((i) => (steps[3][i] = true));
+      [3, 11].forEach((i) => (steps[1][i] = true));
+      [0, 8].forEach((i) => (steps[5][i] = true));
+      [4, 12].forEach((i) => (steps[6][i] = true));
+      [0, 2, 4, 6, 8, 10, 12, 14].forEach((i) => (steps[7][i] = true));
+      render();
+    }
+    function noteName(midi) {
+      return (
+        ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"][
+          midi % 12
+        ] +
+        (Math.floor(midi / 12) - 1)
+      );
+    }
+    function render() {
+      const grid = $("grid");
+      grid.replaceChildren();
+      grid.append(document.createElement("span"));
+      for (let i = 0; i < 16; i++) {
+        let span = document.createElement("span");
+        span.className = "count";
+        span.textContent = String(i + 1);
+        grid.append(span);
+      }
+      for (let r = 0; r < 8; r++) {
+        const name =
+          r < 5
+            ? noteName(scales[$("scale").value][r])
+            : ["Kick", "Snare", "Hi-hat"][r - 5];
+        const label = document.createElement("span");
+        label.className = "name";
+        label.textContent = name;
+        grid.append(label);
+        for (let c = 0; c < 16; c++) {
+          let button = document.createElement("button");
+          button.className = "step";
+          button.dataset.column = c;
+          button.setAttribute("aria-label", name + ", step " + (c + 1));
+          button.setAttribute("aria-pressed", String(steps[r][c]));
+          button.onclick = () => {
+            steps[r][c] = !steps[r][c];
+            button.setAttribute("aria-pressed", String(steps[r][c]));
+          };
+          grid.append(button);
+        }
+      }
+    }
+    function tone(row, time) {
+      const gain = audio.createGain();
+      gain.connect(master);
+      const duration = row === 7 ? 0.055 : row === 6 ? 0.12 : 0.2;
+      if (row < 6) {
+        const osc = audio.createOscillator();
+        osc.type = row === 5 ? "sine" : $("voice").value;
+        const frequency =
+          row === 5
+            ? 145
+            : 440 * Math.pow(2, (scales[$("scale").value][row] - 69) / 12);
+        osc.frequency.setValueAtTime(frequency, time);
+        if (row === 5)
+          osc.frequency.exponentialRampToValueAtTime(42, time + 0.16);
+        gain.gain.setValueAtTime(0.001, time);
+        gain.gain.exponentialRampToValueAtTime(
+          row === 5 ? 0.6 : 0.15,
+          time + 0.006,
+        );
+        gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
+        osc.connect(gain);
+        osc.start(time);
+        osc.stop(time + duration + 0.02);
+        osc.onended = () => {
+          osc.disconnect();
+          gain.disconnect();
+        };
+      } else {
+        const length = Math.ceil(audio.sampleRate * duration);
+        const buffer = audio.createBuffer(1, length, audio.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < length; i++) data[i] = Math.random() * 2 - 1;
+        const source = audio.createBufferSource();
+        source.buffer = buffer;
+        const filter = audio.createBiquadFilter();
+        filter.type = "highpass";
+        filter.frequency.value = row === 7 ? 7000 : 1400;
+        source.connect(filter);
+        filter.connect(gain);
+        gain.gain.setValueAtTime(row === 7 ? 0.15 : 0.25, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
+        source.start(time);
+        source.onended = () => {
+          source.disconnect();
+          filter.disconnect();
+          gain.disconnect();
+        };
+      }
+    }
+    function schedule() {
+      if (!playing) return;
+      if (next < audio.currentTime - 0.1) next = audio.currentTime + 0.01;
+      while (next < audio.currentTime + 0.12) {
+        const current = step;
+        for (let r = 0; r < 8; r++) if (steps[r][current]) tone(r, next);
+        const handle = setTimeout(
+          () => {
+            document
+              .querySelectorAll(".step")
+              .forEach((button) =>
+                button.classList.toggle(
+                  "playhead",
+                  Number(button.dataset.column) === current,
+                ),
+              );
+            $("position").textContent = "Step " + (current + 1) + " / 16";
+            drawTimers = drawTimers.filter((id) => id !== handle);
+          },
+          Math.max(0, (next - audio.currentTime) * 1000),
+        );
+        drawTimers.push(handle);
+        next += stepDuration(
+          Math.max(40, Math.min(240, Number($("bpm").value) || 112)),
+          Number($("swing").value),
+          step,
+        );
+        step = (step + 1) % 16;
+      }
+    }
+    async function play() {
+      if (playing) return;
+      try {
+        playing = true;
+        $("play").disabled = true;
+        audio = new AudioContext();
+        const context = audio;
+        master = audio.createGain();
+        master.gain.value = Number($("volume").value) / 100;
+        master.connect(audio.destination);
+        await audio.resume();
+        if (audio !== context || !playing) return;
+        step = 0;
+        next = audio.currentTime + 0.04;
+        $("play").disabled = true;
+        $("stop").disabled = false;
+        $("status").textContent = "Playing · edit the grid live.";
+        schedule();
+        timer = setInterval(schedule, 25);
+      } catch (error) {
+        stop();
+        $("status").textContent = error.message;
+      }
+    }
+    function stop() {
+      playing = false;
+      clearInterval(timer);
+      drawTimers.forEach(clearTimeout);
+      drawTimers = [];
+      audio?.close();
+      audio = null;
+      $("play").disabled = false;
+      $("stop").disabled = true;
+      $("position").textContent = "Stopped";
+      document
+        .querySelectorAll(".step")
+        .forEach((b) => b.classList.remove("playhead"));
+    }
+    function pattern() {
+      return {
+        version: 1,
+        steps,
+        bpm: Math.max(40, Math.min(240, Number($("bpm").value) || 112)),
+        swing: Number($("swing").value),
+        scale: $("scale").value,
+        voice: $("voice").value,
+      };
+    }
+    function apply(value) {
+      const p = validatePattern(value);
+      stop();
+      steps = p.steps;
+      for (const key of ["bpm", "swing", "scale", "voice"])
+        $(key).value = p[key];
+      $("swing-value").textContent = p.swing + "%";
+      render();
+      $("status").textContent = "Pattern loaded.";
+    }
+    $("play").onclick = play;
+    $("stop").onclick = stop;
+    $("scale").onchange = render;
+    $("starter").onclick = starter;
+    $("clear").onclick = () => {
+      steps = steps.map((row) => row.map(() => false));
+      render();
+    };
+    $("random").onclick = () => {
+      for (let r = 0; r < 5; r++)
+        steps[r] = steps[r].map(() => Math.random() < 0.1);
+      render();
+    };
+    $("swing").oninput = () => {
+      $("swing-value").textContent = $("swing").value + "%";
+    };
+    $("volume").oninput = () => {
+      if (master)
+        master.gain.setTargetAtTime(
+          Number($("volume").value) / 100,
+          audio.currentTime,
+          0.02,
+        );
+    };
+    $("export").onclick = () => {
+      $("json").value = JSON.stringify(pattern(), null, 2);
+      $("dialog-status").textContent = "";
+      $("dialog").showModal();
+    };
+    $("import").onclick = () => {
+      $("json").value = "";
+      $("dialog-status").textContent =
+        "Paste JSON below, or choose a JSON file.";
+      $("dialog").showModal();
+    };
+    const fileButton = document.createElement("button");
+    fileButton.textContent = "Choose JSON file";
+    fileButton.onclick = () => $("file").click();
+    $("dialog").append(fileButton);
+    $("file").onchange = async (event) => {
+      try {
+        const file = event.target.files[0];
+        if (!file) return;
+        if (file.size > 20000) throw Error("Pattern limit is 20 KB.");
+        apply(JSON.parse(await file.text()));
+        $("dialog").close();
+      } catch (error) {
+        $("dialog-status").textContent = error.message;
+      }
+      event.target.value = "";
+    };
+    $("load").onclick = () => {
+      try {
+        apply(JSON.parse($("json").value));
+        $("dialog").close();
+      } catch (error) {
+        $("dialog-status").textContent = error.message;
+      }
+    };
+    $("close").onclick = () => $("dialog").close();
+    $("copy").onclick = () => {
+      $("json").focus();
+      $("json").select();
+      let copied = false;
+      try {
+        copied = document.execCommand("copy");
+      } catch {}
+      $("dialog-status").textContent = copied
+        ? "Copied."
+        : "Selected. Press Cmd/Ctrl+C to copy.";
+    };
+    document.addEventListener("keydown", (event) => {
+      if (
+        event.code === "Space" &&
+        !["INPUT", "SELECT", "TEXTAREA", "BUTTON"].includes(
+          event.target.tagName,
+        ) &&
+        !$("dialog").open
+      ) {
+        event.preventDefault();
+        playing ? stop() : play();
+      }
+    });
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) stop();
+    });
+    window.addEventListener("pagehide", stop);
+    starter();
+  </script>
+</html>

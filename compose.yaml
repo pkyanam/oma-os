@@ -1,0 +1,17 @@
+services:
+  oma-os:
+    build: .
+    ports:
+      - "127.0.0.1:3017:3000"
+    environment:
+      OMA_BROWSER_ENABLED: "1"
+      OMA_AUTH_DIR: /data/auth
+    volumes:
+      - oma-auth:/data/auth
+    init: true
+    shm_size: 1gb
+    security_opt:
+      - seccomp=./docker/seccomp_profile.json
+    restart: unless-stopped
+volumes:
+  oma-auth:

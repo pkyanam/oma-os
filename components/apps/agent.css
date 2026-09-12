@@ -1,0 +1,277 @@
+.agent-workbench {
+  container-type: inline-size;
+}
+.agent-workbench .agent-toolbar {
+  gap: 4px;
+}
+.agent-workbench .agent-toolbar > span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.agent-workbench .agent-toolbar > button {
+  flex: none;
+  min-width: 28px;
+  min-height: 28px;
+}
+.agent-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-el);
+  color: var(--yellow);
+  font: 11px/1.5 var(--font-mono);
+}
+.agent-notice > span {
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+.agent-workflows {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 22px 0 18px;
+  max-width: 620px;
+  width: 100%;
+}
+.agent-workflows > button {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 13px;
+  border: 1px solid var(--border);
+  background: var(--bg-dim);
+  text-align: left;
+  min-width: 0;
+}
+.agent-workflows > button:hover {
+  border-color: var(--accent);
+  background: var(--bg-el);
+}
+.agent-workflows strong {
+  color: var(--fg);
+  font-size: 12px;
+  font-weight: 500;
+}
+.agent-workflows span {
+  color: var(--fg-mute);
+  font: 11px/1.5 var(--font-ui);
+}
+.agent-workbench .agent-intro {
+  max-width: 680px;
+  padding: 22px 12px;
+  margin: auto;
+}
+.agent-workbench .agent-transcript {
+  overscroll-behavior: contain;
+  overflow-wrap: anywhere;
+}
+.agent-workbench .agent-message pre {
+  user-select: text;
+  tab-size: 2;
+}
+.agent-tool-call {
+  border: 1px solid var(--border);
+  background: var(--bg-dim);
+  min-width: 0;
+}
+.agent-tool-call summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 9px;
+}
+.agent-tool-call summary > strong {
+  font-size: 11px;
+  font-weight: 500;
+}
+.agent-tool-call summary > span {
+  color: var(--fg-mute);
+  margin-left: auto;
+  font-size: 10px;
+}
+.agent-tool-call h4 {
+  margin: 10px 10px 4px;
+  font: 10px var(--font-mono);
+  text-transform: uppercase;
+  color: var(--fg-mute);
+}
+.agent-tool-call pre {
+  padding: 4px 10px 10px;
+  max-height: 260px;
+  overflow: auto;
+}
+.agent-secondary {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px;
+}
+.agent-secondary-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.agent-secondary-title strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+.agent-secondary-title > span {
+  margin-left: auto;
+  font: 10px var(--font-mono);
+  color: var(--fg-mute);
+}
+.agent-secondary > p {
+  color: var(--fg-mute);
+  font-size: 11px;
+  line-height: 1.6;
+}
+.agent-secondary > input {
+  width: 100%;
+  background: var(--bg-dim);
+  border: 1px solid var(--border);
+  padding: 9px;
+  color: var(--fg);
+  font: 12px var(--font-mono);
+  margin-bottom: 8px;
+}
+.agent-history-row {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+}
+.agent-history-row > button:first-child {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 4px;
+}
+.agent-history-row strong {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  font-size: 12px;
+  font-weight: 500;
+}
+.agent-history-row span {
+  font-size: 10px;
+  color: var(--fg-mute);
+}
+.agent-context-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  padding: 10px 4px;
+  text-align: left;
+}
+.agent-context-row > span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font: 11px var(--font-mono);
+}
+.agent-context-row > svg {
+  flex: none;
+  color: var(--accent);
+}
+.agent-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 10px;
+  border-top: 1px solid var(--border);
+}
+.agent-attachments > button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 6px;
+  background: var(--bg-el);
+  font: 10px var(--font-mono);
+  max-width: 100%;
+}
+.agent-attachments span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.agent-workbench .agent-compose > div {
+  align-items: center;
+}
+.agent-workbench .agent-compose textarea {
+  min-width: 0;
+  max-height: 140px;
+  resize: vertical;
+  line-height: 1.5;
+}
+.agent-workbench .agent-compose > span {
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+.agent-edit-review > code {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 11px;
+  color: var(--accent);
+  margin-top: 6px;
+}
+.agent-edit-review p,
+.agent-edit-review small {
+  font-size: 10px;
+  color: var(--fg-mute);
+  line-height: 1.5;
+}
+.agent-edit-review details {
+  margin: 8px 0;
+}
+.agent-edit-review pre {
+  max-height: 220px;
+  overflow: auto;
+  white-space: pre-wrap;
+  user-select: text;
+}
+.agent-edit-review > div > button {
+  min-height: 36px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+}
+.agent-edit-review > div > button:last-child {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+@container (max-width: 420px) {
+  .agent-workflows {
+    grid-template-columns: 1fr;
+  }
+  .agent-workbench .agent-intro {
+    padding: 16px 0;
+  }
+  .agent-workbench .agent-compose > span > span {
+    display: none;
+  }
+  .agent-secondary-title > span {
+    display: none;
+  }
+}
+@media (pointer: coarse) {
+  .agent-workbench button {
+    min-height: 40px;
+  }
+  .agent-workbench .agent-toolbar > button {
+    min-width: 36px;
+  }
+  .agent-workbench .agent-compose textarea {
+    font-size: 16px;
+  }
+}

@@ -1,0 +1,685 @@
+.applications-app {
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  container-type: inline-size;
+  background: var(--bg);
+  color: var(--fg);
+  font: 12px var(--font-ui);
+  overflow: hidden;
+}
+.applications-app button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 30px;
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 5px 8px;
+  color: var(--fg-dim);
+  font: inherit;
+  cursor: pointer;
+}
+.applications-app button:hover {
+  color: var(--fg);
+  background: var(--bg-hl);
+}
+.applications-app button:focus-visible,
+.applications-app input:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+.applications-app button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.applications-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.applications-header > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+}
+.applications-header strong {
+  font-size: 15px;
+  font-weight: 500;
+}
+.applications-header span {
+  font-size: 11px;
+  color: var(--fg-dim);
+}
+.applications-controls {
+  padding: 12px 16px 0;
+  flex-shrink: 0;
+}
+.applications-controls > label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid var(--border);
+  background: var(--bg-dim);
+  padding: 9px 11px;
+  color: var(--fg-mute);
+}
+.applications-controls input {
+  width: 100%;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: var(--fg);
+  font: 12px var(--font-ui);
+}
+.applications-controls nav {
+  display: flex;
+  gap: 4px;
+  padding-top: 9px;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+.applications-controls nav button {
+  padding: 6px 10px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.applications-controls nav button[aria-pressed="true"] {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+.applications-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 3px 16px 20px;
+  overscroll-behavior: contain;
+}
+.applications-scroll section {
+  margin-top: 17px;
+}
+.applications-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
+  margin-bottom: 9px;
+}
+.applications-section h2 {
+  font-size: 11px;
+  font-weight: 500;
+  margin: 0;
+  color: var(--fg-dim);
+}
+.applications-section > span {
+  font: 9px var(--font-mono);
+  color: var(--fg-mute);
+  text-align: right;
+}
+.applications-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+.applications-app .application-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 14px 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-dim);
+  min-width: 0;
+  text-align: left;
+  position: relative;
+}
+.application-card > div:nth-child(2) {
+  min-width: 0;
+  flex: 1;
+}
+.application-card .application-icon {
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+  background: var(--bg-el);
+}
+.application-card strong {
+  font-size: 12px;
+  font-weight: 500;
+  display: block;
+  margin-bottom: 6px;
+  color: var(--fg);
+}
+.application-card p {
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--fg-dim);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.application-card > div > span {
+  display: inline-block;
+  margin-top: 8px;
+  font: 9px var(--font-mono);
+  color: var(--fg-mute);
+}
+.application-go {
+  position: absolute;
+  top: 12px;
+  right: 10px;
+  color: var(--fg-mute);
+}
+.application-card.builtin {
+  padding-right: 22px;
+}
+.application-actions {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  margin-top: 11px;
+}
+.application-actions button {
+  border-color: var(--border);
+  font-size: 10px;
+  min-height: 27px;
+  padding: 4px 7px;
+  color: var(--accent);
+}
+.applications-hint {
+  font-size: 10px;
+  line-height: 1.6;
+  color: var(--fg-dim);
+  margin: 9px 0;
+}
+.applications-local-list {
+  border: 1px solid var(--border);
+}
+.application-local {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--border);
+  min-width: 0;
+}
+.application-local:last-child {
+  border-bottom: 0;
+}
+.application-local > svg {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.application-local > div {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.application-local strong {
+  font-size: 11px;
+  font-weight: 500;
+}
+.application-local code {
+  font: 9px var(--font-mono);
+  color: var(--fg-mute);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+.application-local button {
+  flex-shrink: 0;
+  padding: 5px;
+  min-width: 28px;
+}
+.applications-workflows {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+.applications-app .applications-workflows > button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+  padding: 12px;
+  text-align: left;
+}
+.applications-workflows > button > svg {
+  flex-shrink: 0;
+  color: var(--fg-mute);
+}
+.applications-workflows span {
+  min-width: 0;
+  flex: 1;
+}
+.applications-workflows strong {
+  font-size: 11px;
+  font-weight: 500;
+  display: block;
+  margin-bottom: 5px;
+}
+.applications-workflows small {
+  display: block;
+  color: var(--fg-dim);
+  font-size: 10px;
+  line-height: 1.6;
+}
+.applications-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 50px 20px;
+  color: var(--fg-mute);
+  text-align: center;
+}
+.applications-empty p {
+  font-size: 12px;
+}
+.applications-empty button {
+  color: var(--accent);
+  border-color: var(--border);
+}
+.applications-own {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border: 1px dashed var(--border);
+  margin-top: 20px;
+  color: var(--fg-dim);
+}
+.applications-own > svg {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+.applications-own strong {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fg-dim);
+}
+.applications-own p {
+  font-size: 11px;
+  line-height: 1.8;
+  margin: 8px 0;
+  user-select: text;
+}
+.applications-own code {
+  font: 10px var(--font-mono);
+  overflow-wrap: anywhere;
+  color: var(--fg-dim);
+}
+.applications-own button {
+  padding-left: 0;
+  color: var(--accent);
+  font-size: 10px;
+}
+.applications-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 12px;
+  border-top: 1px solid var(--border);
+  color: var(--fg-mute);
+  font: 9px var(--font-mono);
+  flex-shrink: 0;
+}
+.applications-error {
+  padding: 7px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--red);
+  font-size: 11px;
+  flex-shrink: 0;
+  max-height: 110px;
+  overflow: auto;
+  background: var(--bg-el);
+}
+.applications-error > button {
+  margin-left: auto;
+}
+.applications-confirm {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 42px;
+  border: 1px solid var(--red);
+  padding: 16px;
+  background: var(--bg-el);
+  z-index: 5;
+}
+.applications-confirm strong {
+  font-size: 13px;
+  font-weight: 500;
+}
+.applications-confirm p {
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--fg-dim);
+  margin: 10px 0 14px;
+}
+.applications-confirm > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.applications-confirm button {
+  border-color: var(--border);
+  font-size: 11px;
+}
+.applications-confirm .danger {
+  color: var(--red);
+  border-color: var(--red);
+}
+@container (max-width:480px) {
+  .applications-grid,
+  .applications-workflows {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .applications-header {
+    padding: 12px;
+  }
+  .applications-controls {
+    padding: 10px 12px 0;
+  }
+  .applications-scroll {
+    padding: 3px 12px 16px;
+  }
+  .applications-footer > span:last-child {
+    display: none;
+  }
+  .applications-controls nav button {
+    padding: 6px 8px;
+  }
+  .application-card.builtin {
+    min-height: 90px;
+  }
+  .application-card p {
+    max-width: 320px;
+  }
+}
+@container (min-width:900px) {
+  .applications-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .applications-scroll {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+  .applications-controls {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+@media (pointer: coarse) {
+  .applications-app button {
+    min-height: 42px;
+    min-width: 40px;
+  }
+  .applications-controls input {
+    font-size: 16px;
+  }
+  .applications-app .application-card {
+    padding: 16px;
+  }
+  .application-actions button {
+    min-height: 36px;
+  }
+  .applications-controls nav button {
+    min-width: 46px;
+  }
+  .application-local {
+    padding: 10px;
+  }
+}
+.applications-header .applications-help-button {
+  font-size: 10px;
+  color: var(--accent);
+  border-color: var(--border);
+}
+.applications-header .applications-help-button span {
+  font: inherit;
+  color: inherit;
+}
+.applications-welcome-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-el);
+  color: var(--fg-dim);
+  font-size: 11px;
+}
+.applications-welcome-strip button {
+  font-size: 10px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.application-help {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.application-help > header {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.application-help > header button {
+  font-size: 11px;
+  color: var(--accent);
+}
+.application-help > header strong {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fg-dim);
+}
+.application-help-scroll {
+  padding: 18px;
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+  overscroll-behavior: contain;
+}
+.application-help-intro {
+  padding: 15px;
+  border: 1px solid var(--border);
+  background: var(--bg-el);
+  margin-bottom: 14px;
+}
+.application-help-intro h2 {
+  font-size: 17px;
+  line-height: 1.4;
+  font-weight: 500;
+  margin: 0 0 10px;
+}
+.application-help p {
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--fg-dim);
+  margin: 7px 0 12px;
+  overflow-wrap: anywhere;
+}
+.application-help-intro > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.application-help section button {
+  font-size: 11px;
+  border-color: var(--border);
+  color: var(--accent);
+}
+.application-help-guides {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.application-help-guides section {
+  border: 1px solid var(--border);
+  padding: 14px;
+  background: var(--bg-dim);
+  min-width: 0;
+}
+.application-help-guides section > svg {
+  color: var(--accent);
+}
+.application-help h3 {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+  margin: 10px 0 7px;
+}
+.application-help code,
+.application-help kbd {
+  font: 11px var(--font-mono);
+  color: var(--cyan);
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+.application-help kbd {
+  border: 1px solid var(--border);
+  padding: 2px 5px;
+  white-space: nowrap;
+}
+.application-diagnostics {
+  margin-top: 22px;
+}
+.application-diagnostics .applications-section {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.application-diagnostics .applications-section > div {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.application-diagnostics .applications-section h2 {
+  font-size: 12px;
+}
+.application-help .application-diagnostics-note {
+  font-size: 10px;
+  color: var(--fg-mute);
+  line-height: 1.7;
+}
+.application-diagnostic {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.application-diagnostic > svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--fg-mute);
+}
+.application-diagnostic.ok > svg {
+  color: var(--green);
+}
+.application-diagnostic.error > svg {
+  color: var(--red);
+}
+.application-diagnostic > div {
+  min-width: 0;
+  flex: 1;
+}
+.application-diagnostic span {
+  display: block;
+  color: var(--fg-mute);
+  font-size: 10px;
+  margin-bottom: 5px;
+}
+.application-diagnostic strong {
+  font: 12px var(--font-mono);
+  font-weight: 400;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+.application-diagnostic p {
+  font-size: 11px;
+  line-height: 1.65;
+  margin: 7px 0 0;
+}
+.application-diagnostic.error strong {
+  color: var(--red);
+}
+@container (max-width:540px) {
+  .application-help-guides {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .application-help-scroll {
+    padding: 12px;
+  }
+  .application-help-intro {
+    padding: 12px;
+  }
+  .application-help-intro h2 {
+    font-size: 16px;
+  }
+  .applications-header .applications-help-button span {
+    display: none;
+  }
+  .applications-header .applications-help-button {
+    min-width: 32px;
+  }
+  .applications-welcome-strip {
+    align-items: flex-start;
+  }
+  .applications-welcome-strip > span {
+    line-height: 1.8;
+  }
+}
+@media (pointer: coarse) {
+  .application-help section button {
+    min-height: 40px;
+  }
+  .application-help p {
+    font-size: 13px;
+  }
+  .application-help .application-diagnostic p {
+    font-size: 12px;
+  }
+}
+.application-report {
+  margin-top: 12px;
+  border: 1px solid var(--border);
+  padding: 10px;
+}
+.application-report summary {
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--accent);
+}
+.application-report pre {
+  font: 10px/1.7 var(--font-mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
+  max-height: 320px;
+  overflow: auto;
+  color: var(--fg-dim);
+}

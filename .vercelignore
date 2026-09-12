@@ -1,0 +1,5 @@
+.oma-auth
+.env*
+.git
+node_modules
+.next

@@ -1,15 +1,275 @@
-'use client';
-import MonacoEditor, { loader, type OnMount } from '@monaco-editor/react';
-import { useEffect, useRef, useState } from 'react';
-import { Check, Circle, FileCode2, AlertCircle } from 'lucide-react';
-import { fs, errorMessage } from '@/lib/fs/opfs';
-import { useDesktop } from '@/lib/state/store';
-loader.config({paths:{vs:'/monaco/vs'}});
-export default function Editor({id,path,active}:{id:string;path:string;active:boolean}){const [value,setValue]=useState<string>(),[status,setStatus]=useState('loading'),[error,setError]=useState(''),[position,setPosition]=useState({lineNumber:1,column:1});const buffer=useRef(''),timer=useRef<ReturnType<typeof setTimeout>|null>(null),revision=useRef(0),saved=useRef(0),queue=useRef(Promise.resolve()),editor=useRef<Parameters<OnMount>[0]|null>(null);
- const save=()=>{if(revision.current===saved.current)return queue.current;const body=buffer.current,version=revision.current;setStatus('saving');queue.current=queue.current.catch(()=>{}).then(async()=>{try{await fs.write(path,body);saved.current=version;if(revision.current===version){setStatus('saved');useDesktop.getState().setDirty(id,false);}useDesktop.getState().refreshFs();}catch(e){setStatus('error');setError(errorMessage(e));}});return queue.current;};const saveRef=useRef(save);saveRef.current=save;
- useEffect(()=>{let live=true;fs.read(path).then(text=>{if(live){buffer.current=text;setValue(text);setStatus('saved');}}).catch(e=>{if(live){setError(errorMessage(e));setStatus('error');}});return()=>{live=false;if(timer.current)clearTimeout(timer.current);void saveRef.current();};},[path]);
- useEffect(()=>{if(active)editor.current?.focus();else void saveRef.current();},[active]);
- useEffect(()=>{const handle=(e:BeforeUnloadEvent)=>{if(revision.current!==saved.current){e.preventDefault();void saveRef.current();}};window.addEventListener('beforeunload',handle);return()=>window.removeEventListener('beforeunload',handle);},[]);
- const language=path.endsWith('.md')?'markdown':path.endsWith('.json')?'json':/\.[jt]sx?$/.test(path)?'typescript':path.endsWith('.css')?'css':path.endsWith('.html')?'html':'ini';
- return <div className="editor-app"><div className="editor-path"><FileCode2 size={14}/><span>{path}</span><span className="editor-save" title={error}>{status==='error'?<AlertCircle size={11}/>:status==='saved'?<Check size={11}/>:<Circle size={8}/>} {status}</span></div><div className="editor-surface">{value===undefined?<div className="loading-client">{error||'Opening file…'}</div>:<MonacoEditor value={value} path={path} language={language} theme="oma-tokyo-night" loading={<div className="loading-client">Loading editor…</div>} beforeMount={monaco=>monaco.editor.defineTheme('oma-tokyo-night',{base:'vs-dark',inherit:true,rules:[{token:'comment',foreground:'565f89'},{token:'keyword',foreground:'bb9af7'},{token:'string',foreground:'9ece6a'},{token:'number',foreground:'ff9e64'},{token:'keyword.md',foreground:'7aa2f7'}],colors:{'editor.background':'#1a1b26','editor.foreground':'#c0caf5','editorLineNumber.foreground':'#565f89','editorLineNumber.activeForeground':'#a9b1d6','editor.selectionBackground':'#292e42','editor.lineHighlightBackground':'#1f2335','editorCursor.foreground':'#7aa2f7','editorIndentGuide.background1':'#292e42'}})} onMount={(ed,monaco)=>{editor.current=ed;ed.onDidChangeCursorPosition(e=>setPosition(e.position));ed.addCommand(monaco.KeyMod.CtrlCmd|monaco.KeyCode.KeyS,()=>void saveRef.current());if(active)ed.focus();}} onChange={text=>{buffer.current=text??'';setValue(buffer.current);revision.current++;setStatus('unsaved');useDesktop.getState().setDirty(id,true);if(timer.current)clearTimeout(timer.current);timer.current=setTimeout(()=>void saveRef.current(),350);}} options={{fontFamily:'JetBrains Mono',fontSize:13,lineHeight:21,minimap:{enabled:false},tabSize:2,scrollBeyondLastLine:false,automaticLayout:true,padding:{top:16,bottom:16},renderLineHighlight:'line',overviewRulerLanes:0,hideCursorInOverviewRuler:true,scrollbar:{verticalScrollbarSize:6,horizontalScrollbarSize:6},wordWrap:'on',lineNumbersMinChars:3,folding:false,contextmenu:false}}/>}</div><div className="client-footer"><span>{language==='ini'?'TOML':language}</span><span>Ln {position.lineNumber}, Col {position.column}　 UTF-8　 Spaces: 2</span></div></div>;
+"use client";
+import MonacoEditor, { loader, type OnMount } from "@monaco-editor/react";
+import { useEffect, useRef, useState } from "react";
+import { Check, Circle, FileCode2, AlertCircle, Play } from "lucide-react";
+import { fs, errorMessage } from "@/lib/fs/opfs";
+import { useDesktop } from "@/lib/state/store";
+loader.config({ paths: { vs: "/monaco/vs" } });
+export default function Editor({
+  id,
+  path,
+  active,
+}: {
+  id: string;
+  path: string;
+  active: boolean;
+}) {
+  const [value, setValue] = useState<string>(),
+    [status, setStatus] = useState("loading"),
+    [error, setError] = useState(""),
+    [position, setPosition] = useState({ lineNumber: 1, column: 1 });
+  const fsVersion = useDesktop((s) => s.fsVersion);
+  const disk = useRef("");
+  const buffer = useRef(""),
+    timer = useRef<ReturnType<typeof setTimeout> | null>(null),
+    revision = useRef(0),
+    saved = useRef(0),
+    queue = useRef(Promise.resolve()),
+    editor = useRef<Parameters<OnMount>[0] | null>(null);
+  const save = () => {
+    if (revision.current === saved.current) return queue.current;
+    const body = buffer.current,
+      version = revision.current;
+    setStatus("saving");
+    queue.current = queue.current
+      .catch(() => {})
+      .then(async () => {
+        try {
+          await fs.write(path, body, disk.current);
+          disk.current = body;
+          saved.current = version;
+          if (revision.current === version) {
+            setStatus("saved");
+            useDesktop.getState().setDirty(id, false);
+          }
+          useDesktop.getState().refreshFs();
+        } catch (e) {
+          setStatus("error");
+          setError(errorMessage(e));
+        }
+      });
+    return queue.current;
+  };
+  const saveRef = useRef(save);
+  saveRef.current = save;
+  useEffect(() => {
+    let live = true;
+    fs.read(path)
+      .then((text) => {
+        if (live) {
+          disk.current = text;
+          buffer.current = text;
+          setValue(text);
+          setStatus("saved");
+        }
+      })
+      .catch((e) => {
+        if (live) {
+          setError(errorMessage(e));
+          setStatus("error");
+        }
+      });
+    return () => {
+      live = false;
+      if (timer.current) clearTimeout(timer.current);
+      void saveRef.current();
+    };
+  }, [path]);
+  useEffect(() => {
+    if (active) editor.current?.focus();
+    else void saveRef.current();
+  }, [active]);
+  useEffect(() => {
+    let live = true;
+    if (revision.current !== saved.current) return;
+    void fs
+      .read(path)
+      .then((text) => {
+        if (
+          live &&
+          revision.current === saved.current &&
+          text !== disk.current
+        ) {
+          disk.current = text;
+          buffer.current = text;
+          setValue(text);
+          setStatus("saved");
+        }
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [fsVersion, path]);
+
+  useEffect(() => {
+    const handle = (e: BeforeUnloadEvent) => {
+      if (revision.current !== saved.current) {
+        e.preventDefault();
+        void saveRef.current();
+      }
+    };
+    window.addEventListener("beforeunload", handle);
+    return () => window.removeEventListener("beforeunload", handle);
+  }, []);
+  const language = path.endsWith(".md")
+    ? "markdown"
+    : path.endsWith(".json")
+      ? "json"
+      : /\.[jt]sx?$/.test(path)
+        ? "typescript"
+        : path.endsWith(".css")
+          ? "css"
+          : path.endsWith(".html")
+            ? "html"
+            : path.endsWith(".toml") ? "ini" : "plaintext";
+  return (
+    <div className="editor-app">
+      <div className="editor-path">
+        <FileCode2 size={14} />
+        <span>{path}</span>
+        {/\.html?$/.test(path) && (
+          <button
+            className="run-app"
+            title="Run local app"
+            aria-label="Run local app"
+            onClick={() => {
+              void saveRef
+                .current()
+                .then(() => useDesktop.getState().launch("browser", path));
+            }}
+          >
+            <Play size={11} />
+            Run
+          </button>
+        )}
+        <span className="editor-save" title={error}>
+          {status === "error" ? (
+            <AlertCircle size={11} />
+          ) : status === "saved" ? (
+            <Check size={11} />
+          ) : (
+            <Circle size={8} />
+          )}{" "}
+          {status}
+        </span>
+      </div>
+      {status === "error" && value !== undefined && (
+        <div className="save-error">
+          <span>{error}</span>
+          <button
+            onClick={() => {
+              void fs
+                .read(path)
+                .then((text) => {
+                  disk.current = text;
+                  buffer.current = text;
+                  setValue(text);
+                  saved.current = revision.current;
+                  useDesktop.getState().setDirty(id, false);
+                  setStatus("saved");
+                })
+                .catch((e) => setError(errorMessage(e)));
+            }}
+          >
+            Reload disk
+          </button>
+          <button
+            onClick={() => {
+              void fs
+                .read(path)
+                .then((text) => {
+                  disk.current = text;
+                  void saveRef.current();
+                })
+                .catch((e) => setError(errorMessage(e)));
+            }}
+          >
+            Overwrite
+          </button>
+        </div>
+      )}
+      <div className="editor-surface">
+        {value === undefined ? (
+          <div className="loading-client">{error || "Opening file…"}</div>
+        ) : (
+          <MonacoEditor
+            value={value}
+            path={path}
+            language={language}
+            theme="oma-tokyo-night"
+            loading={<div className="loading-client">Loading editor…</div>}
+            beforeMount={(monaco) =>
+              monaco.editor.defineTheme("oma-tokyo-night", {
+                base: "vs-dark",
+                inherit: true,
+                rules: [
+                  { token: "comment", foreground: "565f89" },
+                  { token: "keyword", foreground: "bb9af7" },
+                  { token: "string", foreground: "9ece6a" },
+                  { token: "number", foreground: "ff9e64" },
+                  { token: "keyword.md", foreground: "7aa2f7" },
+                ],
+                colors: {
+                  "editor.background": "#1a1b26",
+                  "editor.foreground": "#c0caf5",
+                  "editorLineNumber.foreground": "#565f89",
+                  "editorLineNumber.activeForeground": "#a9b1d6",
+                  "editor.selectionBackground": "#292e42",
+                  "editor.lineHighlightBackground": "#1f2335",
+                  "editorCursor.foreground": "#7aa2f7",
+                  "editorIndentGuide.background1": "#292e42",
+                },
+              })
+            }
+            onMount={(ed, monaco) => {
+              editor.current = ed;
+              ed.onDidChangeCursorPosition((e) => setPosition(e.position));
+              ed.addCommand(
+                monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS,
+                () => void saveRef.current(),
+              );
+              if (active) ed.focus();
+            }}
+            onChange={(text) => {
+              buffer.current = text ?? "";
+              setValue(buffer.current);
+              revision.current++;
+              setStatus("unsaved");
+              useDesktop.getState().setDirty(id, true);
+              if (timer.current) clearTimeout(timer.current);
+              timer.current = setTimeout(() => void saveRef.current(), 350);
+            }}
+            options={{
+              fontFamily: "JetBrains Mono",
+              fontSize: 13,
+              lineHeight: 21,
+              minimap: { enabled: false },
+              tabSize: 2,
+              scrollBeyondLastLine: false,
+              automaticLayout: true,
+              padding: { top: 16, bottom: 16 },
+              renderLineHighlight: "line",
+              overviewRulerLanes: 0,
+              hideCursorInOverviewRuler: true,
+              scrollbar: {
+                verticalScrollbarSize: 6,
+                horizontalScrollbarSize: 6,
+              },
+              wordWrap: "on",
+              lineNumbersMinChars: 3,
+              folding: false,
+              contextmenu: false,
+            }}
+          />
+        )}
+      </div>
+      <div className="client-footer">
+        <span>{language === "ini" ? "TOML" : language}</span>
+        <span>
+          Ln {position.lineNumber}, Col {position.column}　 UTF-8　 Spaces: 2
+        </span>
+      </div>
+    </div>
+  );
 }

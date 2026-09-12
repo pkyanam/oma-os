@@ -1,0 +1,6 @@
+import { fetchPage } from '@/lib/browser/fetch';
+import { documentHTML } from '@/lib/browser/document';
+export const runtime='nodejs';
+export const maxDuration=30;
+const requests=new Map<string,{count:number;until:number}>();
+export async function GET(request:Request){const origin=request.headers.get('origin');if(origin&&origin!==new URL(request.url).origin)return Response.json({error:'Cross-origin gateway requests are not allowed.'},{status:403});const key=request.headers.get('x-forwarded-for')?.split(',')[0]??'local',now=Date.now(),bucket=requests.get(key);if(bucket&&bucket.until>now&&bucket.count>=30)return Response.json({error:'Please wait before loading more pages.'},{status:429});requests.set(key,{count:bucket&&bucket.until>now?bucket.count+1:1,until:bucket&&bucket.until>now?bucket.until:now+60000});if(requests.size>1000)for(const [id,b]of requests)if(b.until<now)requests.delete(id);try{const url=new URL(request.url).searchParams.get('url');if(!url||url.length>4096)return Response.json({error:'A valid URL is required.'},{status:400});const page=await fetchPage(url);return Response.json({html:documentHTML(page.html,page.url),url:page.url},{headers:{'Cache-Control':'no-store'}});}catch(e){return Response.json({error:e instanceof Error?e.message:'Could not load the page.'},{status:422});}}

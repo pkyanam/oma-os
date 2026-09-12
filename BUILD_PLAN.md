@@ -1,24 +1,41 @@
-# oma.os first build
+# oma.os implementation plan
 
-Preserve the Tokyo Night desktop in [the spec](OMA_OS_V1_SPEC.md). Ship v1 before any provider integration or Linux runtime.
+The user expanded the original [v1 specification](OMA_OS_V1_SPEC.md) into a feature-rich, self-hostable desktop with a real model harness and native open-source applications. This document records the revised scope; implementation evidence and limitations live in [the research index](docs/RESEARCH.md).
 
-## Clarifications
+## Product priorities
 
-- The spec assigns Alt+K to both focus-up and help. Alt+K opens help; Alt+Arrow keys provide all four focus directions, with Alt+H/J/L also supported. Alt+Shift+H/J/K/L swaps. Help documents this explicitly.
-- Use the maintained @xterm/xterm package (the spec's unscoped xterm is legacy).
-- Autosave editor buffers after 350 ms, flush pending changes on close/workspace switch, and expose saved/saving/error state. Ctrl+S also saves. Never silently discard an unsaved buffer.
-- Serve fonts and Monaco assets locally. The first build needs no external service or credential.
-- Keep workspace clients mounted while hidden so terminals and buffers survive navigation. Fullscreen uses the existing tile, preserving client state.
-- One command bus owns terminal, launcher, menu and local agent commands. Validate paths/workspace IDs and report actual filesystem errors.
-- Welcome dismissal is an OPFS marker; seed missing files only, never overwrite edits on startup. UI state persists independently.
-- Destructive reset requires confirmation in UI or explicit `oma reset --yes`.
+1. Keep the live desktop available at port 3017 throughout iteration.
+2. Make shared files and reliable application workflows the foundation: create, edit, execute, save, reopen, export and recover from failure.
+3. Preserve Tokyo Night visual coherence while supporting narrow windows, touch, keyboard navigation and visible window controls.
+4. Make agent capabilities discoverable and inspectable. Report actual results, request review for existing-file changes, support cancellation, and never equate a browser runtime with a Linux VM.
+5. Deliver an MIT-licensed repository with reproducible installation, deployment guidance, source attribution and meaningful tests.
 
-## Delivery sequence
+## Implemented architecture
 
-1. Start the local Next.js server and share its URL immediately.
-2. Build and test binary-tree geometry, persistence and keyboard routing.
-3. Add xterm, OPFS, Monaco and the shared command bus.
-4. Add searchable launcher, keyboard menu, welcome and offline agent.
-5. Check production compilation, layout/parser tests and browser behavior at 1280×800 and 1920×1080.
+- A Next.js desktop with persistent binary-tree tiling, nine workspaces, a launcher, window controls and configurable keyboard modifiers. Hidden workspaces retain their application instances.
+- A shared OPFS filesystem, atomic writes, optimistic edit conflicts and guarded document closing. Portable ZIP backups complement browser persistence.
+- Monaco Editor, Files, Notes, Tasks, Canvas, Media and editable local HTML applications share normal documents instead of private demo state.
+- Actual Just Bash in workers, actual Pyodide Python, and actual PGlite PostgreSQL with explicit stop/recovery behavior.
+- Native Excalidraw with portable scenes and image assets.
+- AI SDK ToolLoopAgent with streamed output, bounded steps, scoped filesystem tools, a read-only shell, review checkpoints and persisted conversations. The bundled ChatGPT auth service is optional; direct CORS-capable providers are also supported.
+- An internal Browser with document, embed and real Chromium modes. Chromium needs a persistent Node host; normal Vercel deployments use the other modes. Websites keep their own account and anti-bot requirements.
 
-Vercel-ready source is part of this build; public deployment depends on an available project/account. Development runs locally for immediate review. Phase 1.5 and the Linux guest remain deferred.
+## Feedback-driven hardening
+
+Real user and built-in-agent feedback is driving fixes for Python save/export/worker lifecycle, close confirmations, mobile header collisions, terminal command integration, browser rendering and discoverable capabilities. Additional work includes a versioned agent contract, structured desktop inspection, session activity and diagnostics. Existing-file approvals remain under user control.
+
+## Verification and delivery
+
+- Unit tests exercise filesystem integrity, path boundaries, command parsing, layout restoration, worker lifecycle, agent cancellation and integration data formats.
+- Isolated browser tests exercise actual application workflows, persistence, downloads, stop/reconnect and responsive/touch layouts without altering the user's desktop.
+- Live website tests are opt-in because third-party services and network conditions are external dependencies.
+- Production compilation and a standalone-server smoke check precede publication.
+- Publish the GitHub source and a Vercel preview. Document persistent-host capabilities separately from serverless capabilities; do not advertise Cloudflare compatibility until its adapter is implemented and tested.
+
+## Deliberately deferred
+
+A Linux kernel, arbitrary native executables, browser-native WebMCP registration, unrestricted agent Python execution, remote-agent handoff, cross-device file synchronization and a full app permission marketplace are not shipped capabilities. The [future compute proposal](docs/research-agent-compute.md) defines the isolation tests needed before exposing stronger execution tools.
+
+## Design reference
+
+Reviewed [ryOS](https://github.com/ryokun6/ryos) for app-instance and sandboxed applet patterns. The implementation is original and does not incorporate its AGPL source. Open-source components incorporated directly retain their own notices and licenses.

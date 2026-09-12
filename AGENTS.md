@@ -1,4 +1,4 @@
-Read OMA_OS_V1_SPEC.md and BUILD_PLAN.md. Preserve the specified Tokyo Night visual language. BUILD_PLAN.md resolves specification conflicts. No Phase 1.5 scope in v1. Run npm test, npm run typecheck and npm run build before completing a build.
+Read OMA_OS_V1_SPEC.md and BUILD_PLAN.md. Preserve the specified Tokyo Night visual language. BUILD_PLAN.md resolves specification conflicts. The user has explicitly expanded scope beyond v1; follow BUILD_PLAN.md and current user direction. Run npm test, npm run typecheck and npm run build before completing a build.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

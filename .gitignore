@@ -2,8 +2,12 @@ node_modules/
 .next/
 .vercel/
 .env*
+!.env.example
 *.tsbuildinfo
 test-results/
 playwright-report/
 .DS_Store
 public/monaco/
+public/excalidraw/
+public/pglite/
+.oma-auth/

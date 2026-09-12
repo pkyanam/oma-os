@@ -1,0 +1,743 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" /><meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  /><title>Regex Lab — oma.os</title
+  ><style>
+    :root {
+      color-scheme: dark;
+      --bg: #1a1b26;
+      --dim: #16161e;
+      --el: #1f2335;
+      --hl: #292e42;
+      --fg: #c0caf5;
+      --mute: #a9b1d6;
+      --border: #3b4261;
+      --accent: #7aa2f7;
+      --green: #9ece6a;
+      --red: #f7768e;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font:
+        13px/1.5 ui-monospace,
+        SFMono-Regular,
+        Consolas,
+        monospace;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 15px 18px;
+      border-bottom: 1px solid var(--border);
+      background: var(--dim);
+    }
+    h1 {
+      font-size: 16px;
+      font-weight: 500;
+      margin: 0;
+    }
+    header small {
+      color: var(--mute);
+    }
+    main {
+      padding: 18px;
+      max-width: 1100px;
+      margin: auto;
+    }
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+      color: var(--fg);
+      border: 1px solid var(--border);
+      background: var(--dim);
+      border-radius: 0;
+    }
+    button {
+      padding: 7px 12px;
+      cursor: pointer;
+      min-height: 34px;
+    }
+    button:hover {
+      border-color: var(--accent);
+      background: var(--hl);
+    }
+    button:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+    input,
+    select {
+      padding: 6px;
+      min-width: 0;
+    }
+    textarea {
+      padding: 10px;
+      resize: vertical;
+      min-width: 0;
+      line-height: 1.6;
+    }
+    button:focus-visible,
+    input:focus,
+    textarea:focus,
+    select:focus {
+      outline: 1px solid var(--accent);
+      outline-offset: 1px;
+    }
+    label {
+      color: var(--mute);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin: 14px 0;
+    }
+    .panel {
+      border: 1px solid var(--border);
+      background: var(--dim);
+      padding: 14px;
+    }
+    .muted,
+    footer {
+      color: var(--mute);
+      font-size: 11px;
+    }
+    footer {
+      margin-top: 20px;
+      line-height: 1.7;
+    }
+    .status {
+      color: var(--accent);
+      min-height: 24px;
+      overflow-wrap: anywhere;
+    }
+    .grow {
+      flex: 1;
+    }
+    dialog {
+      width: min(620px, calc(100vw - 24px));
+      max-height: 85vh;
+      overflow: auto;
+      border: 1px solid var(--accent);
+      background: var(--bg);
+      color: var(--fg);
+      padding: 18px;
+    }
+    dialog::backdrop {
+      background: #0009;
+    }
+    dialog textarea {
+      width: 100%;
+      height: 220px;
+    }
+    dialog img {
+      max-width: 100%;
+      height: auto;
+    }
+    a {
+      color: var(--accent);
+    }
+    [hidden] {
+      display: none !important;
+    }
+    @media (max-width: 540px) {
+      main {
+        padding: 10px;
+      }
+      header {
+        padding: 12px;
+        flex-wrap: wrap;
+        gap: 4px 12px;
+      }
+      .controls {
+        gap: 7px;
+      }
+      .panel {
+        padding: 10px;
+      }
+    }
+    @media (pointer: coarse) {
+      button,
+      input,
+      select {
+        min-height: 42px;
+      }
+      textarea,
+      input[type="text"] {
+        font-size: 16px;
+      }
+    }
+
+    .pattern {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .pattern input {
+      flex: 1;
+      font-size: 15px;
+    }
+    .pattern #flags {
+      flex: 0 0 90px;
+    }
+    .panes {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 14px;
+    }
+    .panes label {
+      display: block;
+      font-size: 11px;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+    .panes textarea {
+      width: 100%;
+      height: 230px;
+      resize: vertical;
+    }
+    .matches {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      max-height: 260px;
+      overflow: auto;
+      margin: 0;
+      font:
+        12px/1.7 ui-monospace,
+        monospace;
+      user-select: text;
+    }
+    .matches mark {
+      background: #7aa2f733;
+      color: var(--fg);
+      border-bottom: 1px solid var(--accent);
+    }
+    .replace {
+      width: 100%;
+    }
+    #results {
+      overflow: auto;
+      max-height: 230px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 11px;
+    }
+    th,
+    td {
+      text-align: left;
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+    td {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      max-width: 220px;
+    }
+    th {
+      color: var(--mute);
+      font-weight: 400;
+    }
+    .cheat {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      font-size: 11px;
+    }
+    .cheat code {
+      color: var(--accent);
+    }
+    h2 {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--accent);
+      margin: 0 0 10px;
+    }
+    #output {
+      width: 100%;
+      height: 130px;
+    }
+    .zero {
+      color: var(--red);
+    }
+    @media (max-width: 650px) {
+      .panes {
+        grid-template-columns: 1fr;
+      }
+      .panes textarea {
+        height: 180px;
+      }
+      .pattern input {
+        min-width: 130px;
+      }
+      .pattern #flags {
+        min-width: 60px;
+        flex-basis: 60px;
+      }
+    }
+  </style>
+  <header>
+    <h1>Regex Lab</h1>
+    <small>Find the shape inside your text</small>
+  </header>
+  <main>
+    <div class="controls">
+      <label
+        >Example
+        <select id="example">
+          <option value="emails">Email addresses</option>
+          <option value="logs">Named log fields</option>
+          <option value="dates">Reformat dates</option>
+          <option value="words">Repeated words</option>
+          <option value="empty">Zero-width boundaries</option>
+        </select></label
+      ><button id="load-example">Load example</button><span class="grow"></span
+      ><button id="run">Run</button><button id="stop" disabled>Stop</button>
+    </div>
+    <div class="pattern">
+      <label for="pattern">/</label
+      ><input
+        id="pattern"
+        aria-label="Regular expression"
+        spellcheck="false"
+      /><label for="flags">/</label
+      ><input
+        id="flags"
+        aria-label="Regex flags"
+        value="g"
+        spellcheck="false"
+        maxlength="9"
+      />
+    </div>
+    <p class="muted">
+      JavaScript RegExp · g all matches · i ignore case · m multiline · s
+      dot-all · u Unicode
+    </p>
+    <div class="panes">
+      <div>
+        <label for="input">SOURCE TEXT</label
+        ><textarea id="input" spellcheck="false"></textarea>
+      </div>
+      <div>
+        <label>MATCH HIGHLIGHT</label>
+        <div class="panel">
+          <pre
+            id="highlight"
+            class="matches"
+            aria-label="Highlighted matches"
+          ></pre>
+        </div>
+      </div>
+    </div>
+    <p id="status" class="status" role="status">Ready</p>
+    <div class="panel">
+      <h2>Match inspector</h2>
+      <div id="results"><p class="muted">Matches appear here.</p></div>
+    </div>
+    <div class="panes">
+      <div>
+        <label for="replacement">REPLACEMENT</label
+        ><input
+          class="replace"
+          id="replacement"
+          value="[$&]"
+          spellcheck="false"
+        />
+        <p class="muted">
+          $& whole match · $1 capture · $&lt;name&gt; named capture · $$ literal
+          dollar
+        </p>
+        <div class="controls">
+          <button id="copy">Copy / select output</button
+          ><button id="export">Export session</button
+          ><button id="import">Import session</button>
+        </div>
+        <div class="cheat">
+          <span><code>\d</code> digit</span
+          ><span><code>\s</code> whitespace</span
+          ><span><code>[a-z]+</code> letters</span
+          ><span><code>^…$</code> line boundaries</span
+          ><span><code>(…)</code> capture group</span
+          ><span><code>(?&lt;name&gt;…)</code> named group</span
+          ><span><code>a|b</code> alternatives</span
+          ><span><code>(?=…)</code> lookahead</span>
+        </div>
+      </div>
+      <div>
+        <label for="output">TRANSFORMED TEXT</label
+        ><textarea id="output" readonly spellcheck="false"></textarea>
+      </div>
+    </div>
+    <footer>
+      Patterns execute in a disposable worker, stopped after 750 ms. Source
+      stays local. Limits: 200 KB input, 1,000 matches, 500 KB transformed
+      output. Long-running or oversized expressions produce an error rather than
+      freezing the desktop. Copy session JSON into an oma.os file to preserve
+      work.
+    </footer>
+  </main>
+  <dialog id="dialog">
+    <h2>Regex session</h2>
+    <textarea
+      id="json"
+      aria-label="Regex session JSON"
+      spellcheck="false"
+    ></textarea>
+    <div class="controls">
+      <button id="copy-json">Copy / select all</button
+      ><button id="load-json">Load JSON</button
+      ><button id="close">Close</button>
+    </div>
+    <p id="dialog-status" class="status"></p>
+  </dialog>
+  <script>
+    function expandReplacement(template, match, input) {
+      let result = "",
+        last = 0;
+      const token = /\$([$&`']|\d{1,2}|<[^>]+>)/g;
+      for (const found of template.matchAll(token)) {
+        result += template.slice(last, found.index);
+        const key = found[1];
+        let value = found[0];
+        if (key === "$") value = "$";
+        else if (key === "&") value = match[0];
+        else if (key === "`") value = input.slice(0, match.index);
+        else if (key === "'")
+          value = input.slice(match.index + match[0].length);
+        else if (key.startsWith("<")) {
+          if (match.groups) value = match.groups[key.slice(1, -1)] ?? "";
+        } else {
+          const index = Number(key);
+          if (index > 0 && index < match.length) value = match[index] ?? "";
+          else if (
+            key.length === 2 &&
+            Number(key[0]) > 0 &&
+            Number(key[0]) < match.length
+          )
+            value = (match[Number(key[0])] ?? "") + key[1];
+        }
+        result += value;
+        if (result.length > 500000) throw Error("Replacement exceeds 500 KB.");
+        last = found.index + found[0].length;
+      }
+      return result + template.slice(last);
+    }
+    function evaluateRegex({ pattern, flags, input, replacement }) {
+      if (
+        typeof pattern !== "string" ||
+        typeof flags !== "string" ||
+        typeof input !== "string" ||
+        typeof replacement !== "string"
+      )
+        throw Error("All fields must be strings.");
+      if (
+        input.length > 200000 ||
+        pattern.length > 10000 ||
+        replacement.length > 10000
+      )
+        throw Error("Input limit 200 KB; pattern/replacement limit 10 KB.");
+      const regex = new RegExp(pattern, flags),
+        matches = [];
+      let output = "",
+        last = 0;
+      while (true) {
+        const match = regex.exec(input);
+        if (!match) break;
+        if (matches.length === 1000)
+          throw Error("More than 1,000 matches. Narrow the expression.");
+        output +=
+          input.slice(last, match.index) +
+          expandReplacement(replacement, match, input);
+        if (output.length > 500000)
+          throw Error("Transformed output exceeds 500 KB.");
+        last = match.index + match[0].length;
+        matches.push({
+          index: match.index,
+          length: match[0].length,
+          text: match[0].slice(0, 200),
+          groups: match
+            .slice(1, 21)
+            .map((v) => (v === undefined ? null : v.slice(0, 200))),
+          named: match.groups
+            ? Object.fromEntries(
+                Object.entries(match.groups)
+                  .slice(0, 20)
+                  .map(([k, v]) => [k, v?.slice(0, 200) ?? null]),
+              )
+            : null,
+        });
+        if (!regex.global) break;
+        if (match[0] === "") {
+          const point = input.codePointAt(regex.lastIndex);
+          regex.lastIndex +=
+            (regex.unicode || regex.unicodeSets) && point > 65535 ? 2 : 1;
+        }
+      }
+      output += input.slice(last);
+      if (output.length > 500000)
+        throw Error("Transformed output exceeds 500 KB.");
+      return { matches, output };
+    }
+    function validateSession(value) {
+      if (value?.version !== 1) throw Error("Expected a Regex Lab v1 session.");
+      for (const key of ["pattern", "flags", "input", "replacement"])
+        if (typeof value[key] !== "string") throw Error("Missing " + key);
+      if (
+        value.input.length > 200000 ||
+        value.pattern.length > 10000 ||
+        value.replacement.length > 10000 ||
+        value.flags.length > 9
+      )
+        throw Error("Session exceeds input limits.");
+      return value;
+    }
+    const $ = (id) => document.getElementById(id);
+    const examples = {
+      emails: {
+        pattern: "[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}",
+        flags: "g",
+        input:
+          "Contact the team:\nada@example.com\ngrace@compiler.dev\nThis line has no address.",
+        replacement: "<mailto:$&>",
+      },
+      logs: {
+        pattern:
+          "(?<time>\\d{2}:\\d{2}) (?<level>INFO|WARN|ERROR) (?<message>.+)",
+        flags: "g",
+        input:
+          "09:41 INFO Started workspace\n09:42 WARN Memory pressure\n09:43 ERROR Connection timed out",
+        replacement: "[$<level>] $<message> (at $<time>)",
+      },
+      dates: {
+        pattern: "(\\d{4})-(\\d{2})-(\\d{2})",
+        flags: "g",
+        input: "Published 2026-09-12\nReviewed 2026-10-03",
+        replacement: "$2/$3/$1",
+      },
+      words: {
+        pattern: "\\b(\\w+)\\s+\\1\\b",
+        flags: "gi",
+        input:
+          "This is is a small example.\nThe the pattern finds repeated repeated words.",
+        replacement: "$1",
+      },
+      empty: {
+        pattern: "\\b",
+        flags: "g",
+        input: "word boundaries",
+        replacement: "|",
+      },
+    };
+    let worker = null,
+      deadline = null,
+      debounce = null,
+      runNumber = 0;
+    const workerSource =
+      expandReplacement.toString() +
+      ";" +
+      evaluateRegex.toString() +
+      `;self.onmessage=({data})=>{try{self.postMessage({ok:true,...evaluateRegex(data)})}catch(error){self.postMessage({ok:false,error:error.message})}};`;
+    function stop(message = "Stopped. Your text is preserved.") {
+      clearTimeout(debounce);
+      runNumber++;
+      worker?.terminate();
+      worker = null;
+      clearTimeout(deadline);
+      $("stop").disabled = true;
+      $("run").disabled = false;
+      $("status").textContent = message;
+    }
+    function run() {
+      clearTimeout(debounce);
+      stop("Running…");
+      const runId = runNumber;
+      const input = $("input").value;
+      try {
+        const url = URL.createObjectURL(
+          new Blob([workerSource], { type: "text/javascript" }),
+        );
+        worker = new Worker(url);
+        URL.revokeObjectURL(url);
+        $("stop").disabled = false;
+        $("run").disabled = true;
+        deadline = setTimeout(
+          () =>
+            stop(
+              "Stopped after 750 ms. This expression may backtrack excessively; simplify it.",
+            ),
+          750,
+        );
+        worker.onmessage = ({ data }) => {
+          if (runId !== runNumber) return;
+          worker.terminate();
+          worker = null;
+          clearTimeout(deadline);
+          $("stop").disabled = true;
+          $("run").disabled = false;
+          if (!data.ok) {
+            $("status").textContent = data.error;
+            $("highlight").textContent = input;
+            $("results").replaceChildren();
+            $("output").value = "";
+            return;
+          }
+          render(data, input);
+        };
+        worker.onerror = () =>
+          stop(
+            "Worker unavailable. This browser may block workers in embedded apps.",
+          );
+        worker.postMessage({
+          pattern: $("pattern").value,
+          flags: $("flags").value,
+          input,
+          replacement: $("replacement").value,
+        });
+      } catch (error) {
+        stop(error.message);
+      }
+    }
+    function render(data, input) {
+      $("status").textContent =
+        data.matches.length +
+        " matches · " +
+        input.length +
+        " source characters · " +
+        data.output.length +
+        " output characters";
+      $("output").value = data.output;
+      const highlight = $("highlight");
+      highlight.replaceChildren();
+      let last = 0;
+      for (const match of data.matches) {
+        highlight.append(
+          document.createTextNode(input.slice(last, match.index)),
+        );
+        const mark = document.createElement("mark");
+        mark.textContent = match.length
+          ? input.slice(match.index, match.index + match.length)
+          : "│";
+        if (!match.length) mark.className = "zero";
+        mark.title = "Index " + match.index + " · length " + match.length;
+        highlight.append(mark);
+        last = match.index + match.length;
+      }
+      highlight.append(document.createTextNode(input.slice(last)));
+      const table = document.createElement("table");
+      const head = document.createElement("tr");
+      for (const name of ["#", "Index", "Match", "Captures"]) {
+        const th = document.createElement("th");
+        th.textContent = name;
+        head.append(th);
+      }
+      table.append(head);
+      data.matches.slice(0, 100).forEach((match, index) => {
+        const tr = document.createElement("tr");
+        for (const value of [
+          index + 1,
+          match.index,
+          match.text || "(zero width)",
+          match.named
+            ? JSON.stringify(match.named)
+            : JSON.stringify(match.groups),
+        ]) {
+          const td = document.createElement("td");
+          td.textContent = String(value);
+          tr.append(td);
+        }
+        table.append(tr);
+      });
+      $("results").replaceChildren(table);
+      if (data.matches.length > 100) {
+        const p = document.createElement("p");
+        p.className = "muted";
+        p.textContent =
+          "Inspector shows the first 100 matches; highlighting and replacement include all matches.";
+        $("results").append(p);
+      }
+    }
+    function load(value) {
+      const session = validateSession(value);
+      for (const key of ["pattern", "flags", "input", "replacement"])
+        $(key).value = session[key];
+      run();
+    }
+    function select(id, status) {
+      $(id).focus();
+      $(id).select();
+      let copied = false;
+      try {
+        copied = document.execCommand("copy");
+      } catch {}
+      $(status).textContent = copied
+        ? "Copied."
+        : "Selected. Press Cmd/Ctrl+C to copy.";
+    }
+    $("run").onclick = run;
+    $("stop").onclick = () => stop();
+    for (const id of ["pattern", "flags", "input", "replacement"])
+      $(id).oninput = () => {
+        clearTimeout(debounce);
+        debounce = setTimeout(run, 350);
+      };
+    $("load-example").onclick = () =>
+      load({ version: 1, ...examples[$("example").value] });
+    $("copy").onclick = () => select("output", "status");
+    $("export").onclick = () => {
+      $("json").value = JSON.stringify(
+        {
+          version: 1,
+          ...Object.fromEntries(
+            ["pattern", "flags", "input", "replacement"].map((key) => [
+              key,
+              $(key).value,
+            ]),
+          ),
+        },
+        null,
+        2,
+      );
+      $("dialog-status").textContent = "";
+      $("dialog").showModal();
+    };
+    $("import").onclick = () => {
+      $("json").value = "";
+      $("dialog-status").textContent = "Paste a saved session JSON.";
+      $("dialog").showModal();
+    };
+    $("copy-json").onclick = () => select("json", "dialog-status");
+    $("load-json").onclick = () => {
+      try {
+        load(JSON.parse($("json").value));
+        $("dialog").close();
+      } catch (error) {
+        $("dialog-status").textContent = error.message;
+      }
+    };
+    $("close").onclick = () => $("dialog").close();
+    window.addEventListener("pagehide", () => {
+      worker?.terminate();
+      clearTimeout(deadline);
+      clearTimeout(debounce);
+    });
+    load({ version: 1, ...examples.emails });
+  </script>
+</html>

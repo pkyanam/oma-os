@@ -1,0 +1,786 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" /><meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  /><title>Image Studio — oma.os</title
+  ><style>
+    :root {
+      color-scheme: dark;
+      --bg: #1a1b26;
+      --dim: #16161e;
+      --el: #1f2335;
+      --hl: #292e42;
+      --fg: #c0caf5;
+      --mute: #a9b1d6;
+      --border: #3b4261;
+      --accent: #7aa2f7;
+      --green: #9ece6a;
+      --red: #f7768e;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font:
+        13px/1.5 ui-monospace,
+        SFMono-Regular,
+        Consolas,
+        monospace;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 15px 18px;
+      border-bottom: 1px solid var(--border);
+      background: var(--dim);
+    }
+    h1 {
+      font-size: 16px;
+      font-weight: 500;
+      margin: 0;
+    }
+    header small {
+      color: var(--mute);
+    }
+    main {
+      padding: 18px;
+      max-width: 1100px;
+      margin: auto;
+    }
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+      color: var(--fg);
+      border: 1px solid var(--border);
+      background: var(--dim);
+      border-radius: 0;
+    }
+    button {
+      padding: 7px 12px;
+      cursor: pointer;
+      min-height: 34px;
+    }
+    button:hover {
+      border-color: var(--accent);
+      background: var(--hl);
+    }
+    button:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+    input,
+    select {
+      padding: 6px;
+      min-width: 0;
+    }
+    textarea {
+      padding: 10px;
+      resize: vertical;
+      min-width: 0;
+      line-height: 1.6;
+    }
+    button:focus-visible,
+    input:focus,
+    textarea:focus,
+    select:focus {
+      outline: 1px solid var(--accent);
+      outline-offset: 1px;
+    }
+    label {
+      color: var(--mute);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin: 14px 0;
+    }
+    .panel {
+      border: 1px solid var(--border);
+      background: var(--dim);
+      padding: 14px;
+    }
+    .muted,
+    footer {
+      color: var(--mute);
+      font-size: 11px;
+    }
+    footer {
+      margin-top: 20px;
+      line-height: 1.7;
+    }
+    .status {
+      color: var(--accent);
+      min-height: 24px;
+      overflow-wrap: anywhere;
+    }
+    .grow {
+      flex: 1;
+    }
+    dialog {
+      width: min(620px, calc(100vw - 24px));
+      max-height: 85vh;
+      overflow: auto;
+      border: 1px solid var(--accent);
+      background: var(--bg);
+      color: var(--fg);
+      padding: 18px;
+    }
+    dialog::backdrop {
+      background: #0009;
+    }
+    dialog textarea {
+      width: 100%;
+      height: 220px;
+    }
+    dialog img {
+      max-width: 100%;
+      height: auto;
+    }
+    a {
+      color: var(--accent);
+    }
+    [hidden] {
+      display: none !important;
+    }
+    @media (max-width: 540px) {
+      main {
+        padding: 10px;
+      }
+      header {
+        padding: 12px;
+        flex-wrap: wrap;
+        gap: 4px 12px;
+      }
+      .controls {
+        gap: 7px;
+      }
+      .panel {
+        padding: 10px;
+      }
+    }
+    @media (pointer: coarse) {
+      button,
+      input,
+      select {
+        min-height: 42px;
+      }
+      textarea,
+      input[type="text"] {
+        font-size: 16px;
+      }
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 230px minmax(0, 1fr);
+      gap: 14px;
+    }
+    .tools label {
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+      margin: 9px 0;
+    }
+    .tools input[type="number"] {
+      width: 82px;
+    }
+    .tools input[type="range"] {
+      width: 112px;
+    }
+    .tools h2 {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      margin: 20px 0 6px;
+    }
+    .tools h2:first-child {
+      margin-top: 0;
+    }
+    .preview {
+      min-height: 320px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: auto;
+      background: var(--el);
+      border: 1px solid var(--border);
+      padding: 12px;
+    }
+    canvas {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      object-fit: contain;
+    }
+    .palette {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    .swatch {
+      min-width: 70px;
+      padding: 22px 6px 5px;
+      border-width: 1px;
+      font-size: 10px;
+    }
+    .drop {
+      border: 1px dashed var(--border);
+      padding: 30px;
+      text-align: center;
+    }
+    .drop.over {
+      border-color: var(--accent);
+    }
+    .tools .controls {
+      gap: 4px;
+    }
+    .tools button {
+      padding: 5px 8px;
+    }
+    .preview figure {
+      margin: 0;
+      max-width: 100%;
+    }
+    #export-image {
+      background: white;
+      display: block;
+    }
+    #palette-text {
+      width: 100%;
+      margin-top: 8px;
+    }
+    details summary {
+      cursor: pointer;
+      color: var(--accent);
+    }
+    @media (max-width: 700px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+      .tools {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+      .preview {
+        min-height: 200px;
+      }
+    }
+    @media (max-width: 390px) {
+      .tools {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+  <header>
+    <h1>Image Studio</h1>
+    <small>Make an image ready for its next home</small>
+  </header>
+  <main>
+    <div class="controls">
+      <button id="choose">Open image</button
+      ><input
+        id="file"
+        type="file"
+        accept="image/png,image/jpeg,image/webp,image/gif,image/bmp"
+        hidden
+      /><button id="demo">Try a generated image</button
+      ><span class="grow"></span
+      ><button id="export" disabled>Export image</button>
+    </div>
+    <p id="status" class="status" role="status">
+      Choose a PNG, JPEG, WebP, GIF, or BMP. Everything stays in this window.
+    </p>
+    <div class="workspace">
+      <aside class="panel tools">
+        <div>
+          <h2>Size</h2>
+          <label
+            >Width
+            <input
+              id="width"
+              type="number"
+              min="1"
+              max="4096"
+              value="800" /></label
+          ><label
+            >Height
+            <input
+              id="height"
+              type="number"
+              min="1"
+              max="4096"
+              value="600" /></label
+          ><label
+            ><input id="lock" type="checkbox" checked /> Lock aspect
+            ratio</label
+          >
+          <div class="controls">
+            <button id="rotate">Rotate 90°</button
+            ><button id="flip">Flip horizontal</button>
+          </div>
+          <h2>Crop source pixels</h2>
+          <label>X <input id="crop-x" type="number" min="0" value="0" /></label
+          ><label>Y <input id="crop-y" type="number" min="0" value="0" /></label
+          ><label
+            >Width
+            <input id="crop-w" type="number" min="1" value="800" /></label
+          ><label
+            >Height
+            <input id="crop-h" type="number" min="1" value="600" /></label
+          ><button id="crop">Apply crop</button
+          ><button id="reset-crop">Full image</button>
+        </div>
+        <div>
+          <h2>Tone</h2>
+          <label
+            >Brightness
+            <input
+              id="brightness"
+              type="range"
+              min="0"
+              max="200"
+              value="100" /></label
+          ><label
+            >Contrast
+            <input
+              id="contrast"
+              type="range"
+              min="0"
+              max="200"
+              value="100" /></label
+          ><label
+            >Saturation
+            <input
+              id="saturation"
+              type="range"
+              min="0"
+              max="200"
+              value="100" /></label
+          ><label><input id="grayscale" type="checkbox" /> Grayscale</label
+          ><button id="reset">Reset adjustments</button>
+          <h2>Export</h2>
+          <label
+            >Format
+            <select id="format">
+              <option value="image/png">PNG</option>
+              <option value="image/jpeg">JPEG</option>
+            </select></label
+          ><label
+            >JPEG quality
+            <input id="quality" type="range" min="30" max="100" value="92"
+          /></label>
+          <p class="muted">
+            PNG keeps transparency. JPEG uses a white background. Output is
+            limited to 8 million pixels and 4096 px per side.
+          </p>
+        </div>
+      </aside>
+      <div>
+        <div id="drop" class="preview">
+          <p id="empty" class="drop">
+            Drop an image here<br /><span class="muted"
+              >or use Open image above</span
+            >
+          </p>
+          <canvas
+            id="canvas"
+            width="800"
+            height="600"
+            hidden
+            aria-label="Edited image preview"
+          ></canvas>
+        </div>
+        <div
+          id="palette"
+          class="palette"
+          aria-label="Dominant image colors"
+        ></div>
+        <input
+          id="palette-text"
+          aria-label="Selected color hex"
+          readonly
+          placeholder="Click a color to select its hex value"
+        />
+        <p id="dimensions" class="muted"></p>
+      </div>
+    </div>
+    <footer>
+      Editing is nondestructive until export. Crop coordinates refer to the
+      original image before rotation. Animated formats use their first decoded
+      frame. No image uploads, remote fonts, or AI service calls.
+    </footer>
+  </main>
+  <dialog id="dialog">
+    <h2>Export ready</h2>
+    <p id="export-info" class="muted"></p>
+    <img id="export-image" alt="Exported edited image" />
+    <div class="controls">
+      <a id="download">Download image</a><button id="close">Close</button>
+    </div>
+    <p class="muted">
+      If this embedded app blocks downloads, right-click or long-press the image
+      and choose Save Image. The preview above is the actual exported file.
+    </p>
+  </dialog>
+  <script>
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, Number(value) || min));
+    }
+    function validSize(width, height) {
+      const w = Math.round(clamp(width, 1, 4096)),
+        h = Math.round(clamp(height, 1, 4096));
+      if (w * h > 8000000)
+        throw Error("Output exceeds 8 million pixels. Reduce width or height.");
+      return { width: w, height: h };
+    }
+    function adjustPixels(data, brightness, contrast, saturation) {
+      for (let i = 0; i < data.length; i += 4) {
+        let r = (data[i] * brightness - 128) * contrast + 128,
+          g = (data[i + 1] * brightness - 128) * contrast + 128,
+          b = (data[i + 2] * brightness - 128) * contrast + 128;
+        const gray = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        data[i] = gray + (r - gray) * saturation;
+        data[i + 1] = gray + (g - gray) * saturation;
+        data[i + 2] = gray + (b - gray) * saturation;
+      }
+      return data;
+    }
+    function dominantColors(data) {
+      const bins = new Map();
+      const stride = Math.max(4, Math.ceil(data.length / 40000 / 4) * 4);
+      for (let i = 0; i < data.length; i += stride) {
+        if (data[i + 3] < 128) continue;
+        const rgb = [data[i], data[i + 1], data[i + 2]].map((v) =>
+          Math.min(255, Math.round(v / 32) * 32),
+        );
+        const key =
+          "#" + rgb.map((v) => v.toString(16).padStart(2, "0")).join("");
+        bins.set(key, (bins.get(key) || 0) + 1);
+      }
+      return [...bins]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8)
+        .map(([color]) => color);
+    }
+    const $ = (id) => document.getElementById(id);
+    let source = null,
+      rotation = 0,
+      flipped = false,
+      crop = null,
+      renderTimer = null,
+      exportURL = null,
+      loadVersion = 0,
+      sourceName = "image";
+    const canvas = $("canvas"),
+      ctx = canvas.getContext("2d", { willReadFrequently: true });
+    function naturalSize() {
+      return rotation % 180
+        ? { width: crop.h, height: crop.w }
+        : { width: crop.w, height: crop.h };
+    }
+    function setSize() {
+      const size = naturalSize(),
+        factor = Math.min(1, 2048 / size.width, 2048 / size.height);
+      $("width").value = Math.round(size.width * factor);
+      $("height").value = Math.round(size.height * factor);
+    }
+    function cropFields() {
+      for (const [key, value] of Object.entries({
+        x: crop.x,
+        y: crop.y,
+        w: crop.w,
+        h: crop.h,
+      }))
+        $("crop-" + key).value = value;
+    }
+    function reset() {
+      rotation = 0;
+      flipped = false;
+      crop = { x: 0, y: 0, w: source.width, h: source.height };
+      for (const id of ["brightness", "contrast", "saturation"])
+        $(id).value = 100;
+      $("grayscale").checked = false;
+      cropFields();
+      setSize();
+      render();
+    }
+    async function openFile(file) {
+      const version = ++loadVersion;
+      try {
+        if (!file) return;
+        if (
+          ![
+            "image/png",
+            "image/jpeg",
+            "image/webp",
+            "image/gif",
+            "image/bmp",
+          ].includes(file.type)
+        )
+          throw Error("Use a PNG, JPEG, WebP, GIF, or BMP image.");
+        if (file.size > 32000000) throw Error("Input limit is 32 MB.");
+        $("status").textContent = "Decoding image…";
+        const bitmap = await createImageBitmap(file);
+        if (version !== loadVersion) {
+          bitmap.close();
+          return;
+        }
+        if (bitmap.width * bitmap.height > 40000000) {
+          bitmap.close();
+          throw Error("Input exceeds 40 million pixels.");
+        }
+        source?.close?.();
+        source = bitmap;
+        sourceName = file.name.replace(/\.[^.]+$/, "") || "image";
+        reset();
+        $("status").textContent =
+          "Opened " +
+          file.name +
+          " · source " +
+          source.width +
+          " × " +
+          source.height;
+      } catch (error) {
+        $("status").textContent = error.message;
+      }
+    }
+    function render() {
+      if (!source) return;
+      try {
+        const size = validSize($("width").value, $("height").value);
+        canvas.width = size.width;
+        canvas.height = size.height;
+        ctx.save();
+        ctx.translate(size.width / 2, size.height / 2);
+        if (flipped) ctx.scale(-1, 1);
+        ctx.rotate((rotation * Math.PI) / 180);
+        const dw = rotation % 180 ? size.height : size.width,
+          dh = rotation % 180 ? size.width : size.height;
+        ctx.drawImage(
+          source,
+          crop.x,
+          crop.y,
+          crop.w,
+          crop.h,
+          -dw / 2,
+          -dh / 2,
+          dw,
+          dh,
+        );
+        ctx.restore();
+        const pixels = ctx.getImageData(0, 0, size.width, size.height);
+        adjustPixels(
+          pixels.data,
+          Number($("brightness").value) / 100,
+          Number($("contrast").value) / 100,
+          $("grayscale").checked ? 0 : Number($("saturation").value) / 100,
+        );
+        ctx.putImageData(pixels, 0, 0);
+        canvas.hidden = false;
+        $("empty").hidden = true;
+        $("export").disabled = false;
+        $("dimensions").textContent =
+          size.width +
+          " × " +
+          size.height +
+          " px · " +
+          rotation +
+          "° · " +
+          (flipped ? "flipped" : "original orientation");
+        $("palette").replaceChildren();
+        for (const color of dominantColors(pixels.data)) {
+          const b = document.createElement("button");
+          b.className = "swatch";
+          b.style.background = color;
+          const rgb = [1, 3, 5].map((index) =>
+            parseInt(color.slice(index, index + 2), 16),
+          );
+          b.style.color =
+            0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2] > 145
+              ? "#16161e"
+              : "#c0caf5";
+          b.textContent = color;
+          b.title = "Select " + color;
+          b.onclick = () => {
+            $("palette-text").value = color;
+            $("palette-text").focus();
+            $("palette-text").select();
+          };
+          $("palette").append(b);
+        }
+      } catch (error) {
+        $("status").textContent = error.message;
+        $("export").disabled = true;
+      }
+    }
+    function queue() {
+      clearTimeout(renderTimer);
+      renderTimer = setTimeout(render, 80);
+    }
+    $("choose").onclick = () => $("file").click();
+    $("file").onchange = (e) => {
+      openFile(e.target.files[0]);
+      e.target.value = "";
+    };
+    $("drop").ondragover = (e) => {
+      e.preventDefault();
+      $("drop").style.borderColor = "var(--accent)";
+    };
+    $("drop").ondragleave = () => {
+      $("drop").style.borderColor = "";
+    };
+    $("drop").ondrop = (e) => {
+      e.preventDefault();
+      $("drop").style.borderColor = "";
+      openFile(e.dataTransfer.files[0]);
+    };
+    $("demo").onclick = () => {
+      loadVersion++;
+      source?.close?.();
+      const demo = document.createElement("canvas");
+      demo.width = 800;
+      demo.height = 600;
+      const c = demo.getContext("2d");
+      c.fillStyle = "#1a1b26";
+      c.fillRect(0, 0, 800, 600);
+      const colors = ["#7aa2f7", "#9ece6a", "#bb9af7", "#e0af68", "#7dcfff"];
+      for (let i = 0; i < 50; i++) {
+        c.fillStyle = colors[i % 5];
+        c.beginPath();
+        c.arc(
+          50 + (i % 10) * 78,
+          70 + Math.floor(i / 10) * 110,
+          20 + (i % 4) * 6,
+          0,
+          Math.PI * 2,
+        );
+        c.fill();
+      }
+      source = demo;
+      sourceName = "color-study";
+      reset();
+      $("status").textContent =
+        "Generated color study · try crop, rotation, and tone controls.";
+    };
+    $("rotate").onclick = () => {
+      if (source) {
+        rotation = (rotation + 90) % 360;
+        const w = $("width").value;
+        $("width").value = $("height").value;
+        $("height").value = w;
+        render();
+      }
+    };
+    $("flip").onclick = () => {
+      flipped = !flipped;
+      render();
+    };
+    $("reset").onclick = () => {
+      if (source) reset();
+    };
+    $("reset-crop").onclick = () => {
+      if (source) {
+        crop = { x: 0, y: 0, w: source.width, h: source.height };
+        cropFields();
+        setSize();
+        render();
+      }
+    };
+    $("crop").onclick = () => {
+      if (!source) return;
+      const x = Math.round(clamp($("crop-x").value, 0, source.width - 1)),
+        y = Math.round(clamp($("crop-y").value, 0, source.height - 1));
+      crop = {
+        x,
+        y,
+        w: Math.round(clamp($("crop-w").value, 1, source.width - x)),
+        h: Math.round(clamp($("crop-h").value, 1, source.height - y)),
+      };
+      cropFields();
+      setSize();
+      render();
+    };
+    for (const id of ["brightness", "contrast", "saturation", "grayscale"])
+      $(id).oninput = queue;
+    for (const id of ["width", "height"])
+      $(id).onchange = () => {
+        if (source && $("lock").checked) {
+          const size = naturalSize();
+          if (id === "width")
+            $("height").value = Math.max(
+              1,
+              Math.round((Number($("width").value) * size.height) / size.width),
+            );
+          else
+            $("width").value = Math.max(
+              1,
+              Math.round(
+                (Number($("height").value) * size.width) / size.height,
+              ),
+            );
+        }
+        render();
+      };
+    $("export").onclick = () => {
+      render();
+      if ($("export").disabled) return;
+      const output = document.createElement("canvas");
+      output.width = canvas.width;
+      output.height = canvas.height;
+      const c = output.getContext("2d");
+      if ($("format").value === "image/jpeg") {
+        c.fillStyle = "#fff";
+        c.fillRect(0, 0, output.width, output.height);
+      }
+      c.drawImage(canvas, 0, 0);
+      output.toBlob(
+        (blob) => {
+          if (!blob) {
+            $("status").textContent =
+              "This browser could not encode the image.";
+            return;
+          }
+          if (exportURL) URL.revokeObjectURL(exportURL);
+          exportURL = URL.createObjectURL(blob);
+          $("export-image").src = exportURL;
+          $("download").href = exportURL;
+          $("download").download =
+            sourceName +
+            "-edited." +
+            (blob.type === "image/jpeg" ? "jpg" : "png");
+          $("export-info").textContent =
+            output.width +
+            " × " +
+            output.height +
+            " · " +
+            Math.round(blob.size / 1024) +
+            " KB · " +
+            blob.type;
+          $("dialog").showModal();
+        },
+        $("format").value,
+        Number($("quality").value) / 100,
+      );
+    };
+    $("close").onclick = () => $("dialog").close();
+    window.addEventListener("pagehide", () => {
+      source?.close?.();
+      if (exportURL) URL.revokeObjectURL(exportURL);
+    });
+  </script>
+</html>
