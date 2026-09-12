@@ -8,6 +8,7 @@ test("Activity reports session operations, filters, exports safe metadata and cl
   await boot(page);
   const activity = await launch(page, "Activity");
   const terminal = await launch(page, "Terminal");
+  const terminalId = await terminal.getAttribute("data-tile-id");
   await shell(
     terminal,
     'oma fs write Documents/private-activity-check.txt "never include these contents"',
@@ -18,7 +19,7 @@ test("Activity reports session operations, filters, exports safe metadata and cl
     .pressSequentially("quit");
   await page.keyboard.press("Enter");
   await expect(
-    page.getByRole("region", { name: "Terminal window", exact: true }),
+    page.locator(`[data-tile-id="${terminalId}"]`),
   ).toHaveCount(0);
   await activity.getByText("Session activity", { exact: true }).click();
   await page.keyboard.press("Alt+f");
@@ -81,7 +82,7 @@ test("Applications diagnostics report real local capability without model calls"
   let paidRequests = 0;
   page.on("request", (request) => {
     if (
-      /\/api\/chatgpt\/(?:proxy|responses|chat\/completions)/.test(
+      /\/api\/(?:chatgpt\/(?:proxy|responses|chat\/completions)|ai\/v1\/chat\/completions)/.test(
         request.url(),
       )
     )

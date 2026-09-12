@@ -40,3 +40,7 @@ The parent integration task separately performed one tiny live GLM binding infer
 - [Function calling](https://developers.cloudflare.com/workers-ai/features/function-calling/): model-selected function calls; execution remains in the application.
 - [OpenAI compatibility](https://developers.cloudflare.com/workers-ai/configuration/open-ai-compatibility/): compatible chat completion endpoint format. This adapter uses the binding rather than a separate REST API token.
 - [Rate limit binding](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/): per-location, eventually consistent limiting is unsuitable for strict account budget accounting; the adapter uses a Durable Object transaction instead.
+
+## Live provider check
+
+On 2026-09-12, the configured account returned a real GLM text completion (14 tokens), a correct `add(17, 25)` function call (206 tokens), and an OpenAI-compatible SSE text stream through the Cloudflare CLI. These check the live provider, separately from the authenticated application route. The route and AI SDK multi-step tool continuation are covered by isolated tests; a completed real-user sign-in/inference flow on the public deployment has not been asserted by these checks.
