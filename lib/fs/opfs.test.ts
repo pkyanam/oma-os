@@ -194,7 +194,7 @@ test("binary expected fingerprint rejects same-size changed contents and deletio
   await fs.write("binary.dat", "BBBB");
   await assert.rejects(
     fs.writeBlob("binary.dat", new Blob(["backup"]), { expected }),
-    /changed since/,
+    /changed on disk/,
   );
   assert.equal(await fs.read("binary.dat"), "BBBB");
   await fs.rm("binary.dat");

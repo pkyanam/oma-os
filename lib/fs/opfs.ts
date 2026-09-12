@@ -103,9 +103,7 @@ async function save(
         actual.size !== fingerprint.size ||
         actual.sha256 !== fingerprint.sha256
       )
-        throw new Error(
-          "File changed since the backup preview. Inspect the backup again before replacing it.",
-        );
+        throw new Error("File changed on disk. Reload it before replacing it.");
     }
     let stream: FileSystemWritableFileStream | undefined;
     try {

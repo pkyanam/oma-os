@@ -67,9 +67,13 @@ test("Settings rejects mismatched backup counts and protects files changed after
   await settings
     .getByRole("button", { name: "Restore files", exact: true })
     .click();
+  await expect(
+    settings.getByRole("button", { name: "Export backup", exact: true }),
+  ).toBeEnabled();
+  await expect(settings.getByRole("status")).toHaveCount(1);
   await expect(settings.getByRole("status")).toContainText("Restored 0 files");
   await expect(settings.getByRole("alert")).toContainText(
-    "changed since the backup preview",
+    "File changed on disk. Reload it before replacing it.",
   );
   await upload.setInputFiles(valid);
   await settings
@@ -78,6 +82,10 @@ test("Settings rejects mismatched backup counts and protects files changed after
   await settings
     .getByRole("button", { name: "Restore files", exact: true })
     .click();
+  await expect(
+    settings.getByRole("button", { name: "Export backup", exact: true }),
+  ).toBeEnabled();
+  await expect(settings.getByRole("status")).toHaveCount(1);
   await expect(settings.getByRole("status")).toContainText("Restored 1 files");
   await page.keyboard.press("Alt+f");
   await shell(

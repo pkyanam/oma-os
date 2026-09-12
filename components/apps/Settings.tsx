@@ -421,14 +421,9 @@ export default function Settings() {
             </section>
           </>
         )}
-        {busy && (
+        {(busy || message) && (
           <p role="status" className="settings-feedback">
-            Working…
-          </p>
-        )}
-        {message && (
-          <p role="status" className="settings-feedback">
-            {message}
+            {busy ? "Working…" : message}
           </p>
         )}
         {error && (
