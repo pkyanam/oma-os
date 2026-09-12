@@ -124,3 +124,51 @@ test("live Workers AI completes a desktop tool loop without signing in", async (
     app.locator(".agent-message.assistant .agent-markdown").last(),
   ).toContainText(/Agent/i);
 });
+
+test("ChatGPT rejection shows a readable error and replaces the green light", async ({
+  page,
+}) => {
+  await page.route("**/api/agent-config", (route) =>
+    route.fulfill({
+      json: {
+        chatgpt: { enabled: true },
+        workersAI: { enabled: false, models: [] },
+      },
+    }),
+  );
+  await page.route("**/api/chatgpt/session", (route) =>
+    route.fulfill({ json: { status: "authenticated" } }),
+  );
+  await page.route("**/api/chatgpt/models", (route) =>
+    route.fulfill({ json: { models: [{ slug: "gpt-5.6-luna" }] } }),
+  );
+  await page.route("**/api/chatgpt/responses", (route) =>
+    route.fulfill({
+      status: 403,
+      json: {
+        error: "responses_request_failed",
+        status: 403,
+        detail: "<html><body>Blocked</body></html>",
+      },
+    }),
+  );
+  await boot(page, "/", { workspace: "applications" });
+  const app = await launch(page, "Agent");
+  await app
+    .getByRole("button", { name: "Agent settings", exact: true })
+    .click();
+  await expect(app.getByLabel("Model ID")).toHaveValue("gpt-5.6-luna");
+  await app.getByRole("button", { name: "Done", exact: true }).click();
+  await app
+    .getByRole("textbox", { name: "Agent command", exact: true })
+    .fill("Hello");
+  await app.getByRole("button", { name: "Send command", exact: true }).click();
+  await expect(app.locator(".agent-message.system").last()).toContainText(
+    "HTTP 403",
+  );
+  await expect(app.locator(".agent-message.system").last()).toContainText(
+    "OpenAI rejected",
+  );
+  await expect(app.locator(".connection-dot.failed")).toBeVisible();
+  await expect(app.locator(".connection-dot.connected")).toHaveCount(0);
+});

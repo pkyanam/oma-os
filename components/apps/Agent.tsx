@@ -1,4 +1,5 @@
 "use client";
+import { agentErrorText } from "@/lib/agent/errors";
 import { modelConnectionIssue } from "@/lib/agent/readiness";
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
@@ -51,8 +52,7 @@ const message = (
   role: TranscriptMessage["role"],
   text: string,
 ): TranscriptMessage => ({ id: crypto.randomUUID(), role, text });
-const errorText = (error: unknown) =>
-  error instanceof Error ? error.message : String(error);
+const errorText = agentErrorText;
 export default function Agent({ active }: { active: boolean }) {
   const config = useAgentConfig();
   const [conversation, setConversation] =
@@ -344,10 +344,7 @@ export default function Agent({ active }: { active: boolean }) {
       return;
     }
     if (!connected) {
-      append(
-        "system",
-        connectionIssue!,
-      );
+      append("system", connectionIssue!);
       setPanel("settings");
       running.current = false;
       setBusy(false);
@@ -472,9 +469,7 @@ export default function Agent({ active }: { active: boolean }) {
         "system",
         controller.signal.aborted
           ? "Stopped. Completed file changes remain saved. You can ask the agent to continue."
-          : error instanceof TypeError
-            ? "Connection failed. Check the endpoint, network, and provider CORS support."
-            : errorText(error),
+          : agentErrorText(error, config.mode),
       );
       // A partial turn may contain unmatched tool calls. Replay visible text only on retry.
       history.current = [
@@ -518,10 +513,20 @@ export default function Agent({ active }: { active: boolean }) {
   return (
     <div className="agent-app agent-workbench">
       <div className="agent-toolbar">
-        <span title={config.model || "No model connected"}>
+        <span
+          title={
+            failed
+              ? "Last model request failed. See the system message below."
+              : config.model || "Choose a model"
+          }
+        >
           <span
             className={
-              connected ? "connection-dot connected" : "connection-dot"
+              failed
+                ? "connection-dot failed"
+                : connected
+                  ? "connection-dot connected"
+                  : "connection-dot"
             }
           />
           {config.model || "No model connected"}
@@ -768,7 +773,10 @@ export default function Agent({ active }: { active: boolean }) {
               ) : item.role === "assistant" ? (
                 <Markdown className="agent-markdown">{item.text}</Markdown>
               ) : (
-                <pre>{item.text}</pre>
+                <pre>
+                  {item.text ||
+                    "This earlier request failed without a recorded error message. Send again to see the current status."}
+                </pre>
               )}
             </div>
           ))}

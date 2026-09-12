@@ -196,3 +196,9 @@ PGlite, Excalidraw fonts and editor assets are self-hosted. Python Lab fetches p
 ### Standalone dependency tracing
 
 The Chromium route explicitly includes Playwright's runtime package files in Next.js output tracing. Playwright dynamically reads `browsers.json`, which automatic tracing omitted in the first standalone smoke check. Keep this rule when changing server packaging, and test `/api/browser-runtime` on the built server. [Next.js output tracing documentation](https://nextjs.org/docs/app/api-reference/config/next-config-js/output).
+
+### ChatGPT sign-in succeeds but inference returns 403
+
+On September 12, 2026, production logs confirmed that model discovery and sign-in can succeed while OpenAI rejects `/responses` with an HTML HTTP 403 page. This is an upstream rejection, not proof that the selected model is absent. The community SDK's original error envelope could become an empty AI SDK error message; oma.os now preserves the status and supplies a readable error.
+
+A green connection indicator means local connection prerequisites are present, not that an inference request has succeeded. A failed request changes the indicator to red. Do not describe ChatGPT inference as verified based on sign-in or model discovery alone. Workers AI and direct provider connections are independent, explicitly selected alternatives; the app never silently changes providers.

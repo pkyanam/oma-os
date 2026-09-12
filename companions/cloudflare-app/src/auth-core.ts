@@ -1,3 +1,4 @@
+import { normalizeModelError } from "./auth-errors";
 import {
   createChatGPTHandler,
   readCookie,
@@ -226,13 +227,16 @@ export function createAuthController(
       );
       (timer as unknown as { unref?: () => void }).unref?.();
       try {
-        const response = await transport(input, {
+        let response = await transport(input, {
           ...init,
           signal: AbortSignal.any([
             abort.signal,
             ...(init?.signal ? [init.signal] : []),
           ]),
         });
+        // Sanitize before the SDK consumes/logs upstream rejection bodies.
+        if (!response.ok && new URL(String(input)).pathname.endsWith("/responses"))
+          response = await normalizeModelError(response);
         if (
           !response.body ||
           response.headers.get("content-type")?.includes("text/event-stream")
@@ -274,7 +278,10 @@ export function createAuthController(
     fetch: (request: Request) =>
       queue(async () => {
         initialize();
-        return sdk.handler(request);
+        const response = await sdk.handler(request);
+        return new URL(request.url).pathname.endsWith("/responses")
+          ? normalizeModelError(response)
+          : response;
       }),
     alarm: () =>
       queue(async () => {
