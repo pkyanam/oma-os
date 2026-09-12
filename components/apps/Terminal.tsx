@@ -7,6 +7,7 @@ import { useDesktop } from "@/lib/state/store";
 import { fs } from "@/lib/fs/opfs";
 import { createShellSession } from "@/lib/shell/client";
 import "@xterm/xterm/css/xterm.css";
+import "./terminal.css";
 export default function Terminal({
   id,
   active,
@@ -15,7 +16,10 @@ export default function Terminal({
   active: boolean;
 }) {
   const container = useRef<HTMLDivElement>(null),
-    instance = useRef<XTerm | null>(null);
+    instance = useRef<XTerm | null>(null),
+    shellView = useRef<HTMLDivElement>(null),
+    executionStatus = useRef<HTMLDivElement>(null),
+    cancel = useRef<(() => void) | null>(null);
   useEffect(() => {
     if (!container.current) return;
     let disposed = false,
@@ -25,6 +29,11 @@ export default function Terminal({
       historyIndex = 0;
     const history: string[] = [];
     const shell = createShellSession({ store: useDesktop, fs, tileId: id });
+    cancel.current = shell.cancel;
+    const markRunning = (running: boolean) => {
+      shellView.current?.setAttribute("aria-busy", String(running));
+      if (executionStatus.current) executionStatus.current.hidden = !running;
+    };
     const term = new XTerm({
       fontFamily: "JetBrains Mono, monospace",
       fontSize: 13,
@@ -108,6 +117,7 @@ export default function Terminal({
         input = "";
         cursor = 0;
         busy = true;
+        markRunning(true);
         void shell
           .execute(value)
           .then((result) => {
@@ -128,13 +138,20 @@ export default function Terminal({
               )
                 term.writeln("");
             }
-            term.write(prompt());
+            // Keep the terminal busy until xterm has parsed the output and prompt.
+            return new Promise<void>((resolve) =>
+              term.write(prompt(), resolve),
+            );
           })
           .catch((error) => {
-            if (!disposed) term.writeln(String(error) + "\r\n" + prompt());
+            if (!disposed)
+              return new Promise<void>((resolve) =>
+                term.write(String(error) + "\r\n" + prompt(), resolve),
+              );
           })
           .finally(() => {
             busy = false;
+            markRunning(false);
           });
       } else if (data === "\u0003") {
         term.write("^C\r\n" + prompt());
@@ -193,6 +210,7 @@ export default function Terminal({
     return () => {
       disposed = true;
       shell.dispose();
+      cancel.current = null;
       clearTimeout(timer);
       observer.disconnect();
       listener.dispose();
@@ -203,5 +221,23 @@ export default function Terminal({
   useEffect(() => {
     if (active) instance.current?.focus();
   }, [active]);
-  return <div className="terminal" ref={container} aria-label="Terminal" />;
+  return (
+    <div className="terminal-shell" ref={shellView} aria-busy="false">
+      <div className="terminal" ref={container} aria-label="Terminal" />
+      <div
+        className="terminal-execution-status"
+        ref={executionStatus}
+        role="status"
+        hidden
+      >
+        <span>Running</span>
+        <button
+          aria-label="Stop terminal command"
+          onClick={() => cancel.current?.()}
+        >
+          Stop <kbd>Ctrl+C</kbd>
+        </button>
+      </div>
+    </div>
+  );
 }

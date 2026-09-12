@@ -1,0 +1,33 @@
+.terminal-shell {
+  height: 100%;
+  min-height: 0;
+  position: relative;
+}
+.terminal-execution-status:not([hidden]) {
+  position: absolute;
+  z-index: 2;
+  right: 8px;
+  top: 5px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-dim);
+  border: 1px solid var(--border);
+  color: var(--fg-mute);
+  padding: 5px 9px;
+  font: 10px var(--font-mono);
+}
+.terminal-execution-status button {
+  color: var(--accent);
+  min-height: 24px;
+}
+.terminal-execution-status kbd {
+  font-size: 9px;
+  margin-left: 5px;
+}
+@media (pointer: coarse) {
+  .terminal-execution-status button {
+    min-height: 44px;
+    min-width: 70px;
+  }
+}

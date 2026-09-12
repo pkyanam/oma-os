@@ -1,5 +1,6 @@
 # oma.os
 
+[Live desktop](https://oma-os-red.vercel.app) · [Agent contract](docs/AGENT_CONTRACT.md) · [Deployment guide](docs/DEPLOYMENT.md)
 A local-first browser desktop for thinking, making, and working with an agent. Tokyo Night, tiled windows, nine workspaces, real applications, and one shared filesystem.
 
 **[Quick start](#quick-start) · [Applications](#applications) · [Self-hosting](#self-hosting) · [For agents](#for-agents) · [Research](docs/RESEARCH.md)**

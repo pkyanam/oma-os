@@ -1,5 +1,10 @@
 import { expect, type Page, type Locator } from "@playwright/test";
 export async function boot(page: Page, url = "/") {
+  const rate = Number(process.env.OMA_E2E_CPU_RATE);
+  if (Number.isFinite(rate) && rate > 1) {
+    const session = await page.context().newCDPSession(page);
+    await session.send("Emulation.setCPUThrottlingRate", { rate });
+  }
   await page.goto(url);
   const welcome = page.getByRole("button", { name: "Enter the desktop ↵" });
   await expect(welcome).toBeVisible();
@@ -29,8 +34,15 @@ export async function shell(
   script: string,
   output: string | RegExp,
 ) {
+  const execution = region.locator(".terminal-shell");
+  await expect(execution).toHaveAttribute("aria-busy", "false", {
+    timeout: 25_000,
+  });
   const input = region.getByRole("textbox", { name: "Terminal input" });
   await input.pressSequentially(script);
   await input.press("Enter");
+  await expect(execution).toHaveAttribute("aria-busy", "false", {
+    timeout: 25_000,
+  });
   await expect(region).toContainText(output, { timeout: 25_000 });
 }
