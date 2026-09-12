@@ -1,0 +1,11 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { parse } from './parse';
+test('empty input',()=>assert.deepEqual(parse('  '),[]));
+test('splits whitespace',()=>assert.deepEqual(parse('oma  ws\t2'),['oma','ws','2']));
+test('double and single quotes',()=>assert.deepEqual(parse(`echo "hello world" 'another word'`),['echo','hello world','another word']));
+test('empty quoted argument',()=>assert.deepEqual(parse('echo ""'),['echo','']));
+test('escaped spaces and quotes',()=>assert.deepEqual(parse('echo hello\\ world \\"ok\\"'),['echo','hello world','"ok"']));
+test('single quotes preserve backslashes',()=>assert.deepEqual(parse("echo 'a\\b'"),['echo','a\\b']));
+test('adjacent quoted segments concatenate',()=>assert.deepEqual(parse('echo ab"cd ef"'),['echo','abcd ef']));
+test('unclosed quotes error',()=>assert.throws(()=>parse('echo "oops'),/Unclosed quote/));

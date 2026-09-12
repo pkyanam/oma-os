@@ -1,0 +1,2 @@
+'use client';
+export default function ErrorPage({reset}:{reset:()=>void}){return <div style={{height:'100dvh',display:'grid',placeItems:'center'}}><div><p>The desktop could not open.</p><p style={{color:'var(--fg-mute)',marginTop:8}}>Your files remain in this browser.</p><button style={{border:'1px solid var(--border)',padding:'8px 16px',marginTop:20}} onClick={reset}>Try again</button></div></div>}

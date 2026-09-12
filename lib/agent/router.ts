@@ -1,0 +1,3 @@
+import { oma, type BusContext } from '@/lib/oma/bus';
+import { parse } from '@/lib/oma/parse';
+export async function routeAgent(input:string,ctx:BusContext):Promise<string>{try{const [cmd,...args]=parse(input);switch(cmd){case '/help':return '/help · /theme <id> · /launch <app> · /ws <1–9> · /ls';case '/theme':return (await oma(['theme','set',...args],ctx)).message;case '/launch':case '/ws':return (await oma([cmd.slice(1),...args],ctx)).message;case '/ls':return (await oma(['fs','ls',...args],ctx)).message;default:return 'offline: no model configured';}}catch(error){return error instanceof Error?error.message:String(error);}}
