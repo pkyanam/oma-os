@@ -4,7 +4,8 @@ Offline caching is optional in the production Cloudflare build. It is not enable
 
 1. While online, open **Settings → Desktop → Offline access**.
 2. Select **Enable offline access** and wait for the file download to finish.
-3. Confirm **Offline files ready** before disconnecting.
+3. Confirm **Offline files ready**.
+4. Save your work, then reopen or reload the desktop once while still online before disconnecting. Initial installation does not take control of an already open page.
 
 The download includes the desktop, Applications, Notes and Settings. Other application assets can be cached after use, subject to cache limits. Their presence is not guaranteed: an app you have not opened, a runtime loaded from another location, AI connections and websites may still require a network connection. If a download fails, Settings displays the error and offers a retry.
 

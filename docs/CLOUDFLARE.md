@@ -43,3 +43,7 @@ These are proposed, not enabled by this document.
 Add bindings only when a working UI and tested use case consume them. Track browser minutes, model tokens, uploaded bytes, and job attempts per owner; rate limits alone do not cap bills. Preserve local-only operation and make cloud data movement visible.
 
 Use the repository's explicit `build:cloudflare` and `deploy:cloudflare` scripts. Generic framework autodetection can select the retained Next target incorrectly. Before deployment, inspect the generated Wrangler configuration and actual bindings, then test health, login, browser ownership, cold asset loads, and private-file isolation against the deployed origin. Recheck current [Workers pricing](https://developers.cloudflare.com/workers/platform/pricing/) and service-specific limits when enabling a new capability.
+
+## Continuous deployment
+
+The published Worker currently deploys through Wrangler, with checks in GitHub Actions. No Workers Builds trigger is configured. Read-only CLI discovery found no usable repository link. Cloudflare requires a one-time [GitHub App authorization](https://developers.cloudflare.com/workers/ci-cd/builds/api-reference/#prerequisites) before API-based setup; after authorization, use repository `pkyanam/oma-os`, branch `main`, root `/`, build `npm run build:cloudflare`, deploy `npx wrangler deploy`, and Node 24. Keep Durable Object preview limitations in mind when adding branch builds.

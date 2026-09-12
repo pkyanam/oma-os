@@ -68,3 +68,7 @@ After pruning, the real-browser integration checks passed for:
 The compressed transport also passed actual workerd/Vite browser tests: query, save, and reload with the raw asset blocked, plus successful raw fallback when gzip is unavailable. Five focused tests cover integrity failures, size bounds, decompression, and HTTP-decoded responses.
 
 The static closure unit tests verify import/URL traversal and omission of extension/declaration files. Those application checks ran on the local Next development server; they do not substitute for testing a deployed Cloudflare build. Re-run the checks after dependency updates, alongside `npm test`, `npm run typecheck`, and the target production build. Measure deployed requests with a clean browser cache before making wire-size or cold-start claims.
+
+## Published first-open measurement
+
+A fresh Chromium context on deployment `1c2a02c3-58b7-4b1a-adf3-9ccda61e7109` transferred 111,594 encoded bytes of JavaScript through the Applications screen. All 28 resource entries totaled 566,950 encoded bytes, including fonts and CSS but excluding the navigation HTML. No Monaco, SQL, Excalidraw or Pyodide runtime requests occurred. This is one measured cold browser visit, not a latency guarantee; app runtimes load separately on demand.

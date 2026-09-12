@@ -29,6 +29,10 @@ http
       res.writeHead(200).end("ok");
       return;
     }
+    if (pathname === "/index.html") {
+      res.writeHead(307, { location: "/" }).end();
+      return;
+    }
     const path = resolve(
       root,
       "." + (pathname === "/" ? "/index.html" : pathname),

@@ -108,7 +108,10 @@ self.addEventListener("install", (event) =>
           await put(
             path,
             await fetch(
-              new Request(path, { cache: "reload", credentials: "omit" }),
+              new Request(path === "/index.html" ? "/" : path, {
+                cache: "reload",
+                credentials: "omit",
+              }),
             ),
           );
           completed++;

@@ -83,7 +83,9 @@ export async function enableOffline() {
       scope: "/",
       updateViaCache: "none",
     });
-    await item.update();
+    // A failed first install may remove its registration before update() runs.
+    // Only explicitly check updates for a previously active registration.
+    if (item.active && !item.installing) await item.update();
     await new Promise<void>((resolve, reject) => {
       const check = () => {
         if (!item.installing && (item.active || item.waiting)) {
@@ -124,7 +126,9 @@ export async function enableOffline() {
     phase = "ready";
   } catch (cause) {
     phase = "error";
-    error = cause instanceof Error ? cause.message : "Offline download failed.";
+    error =
+      error ||
+      (cause instanceof Error ? cause.message : "Offline download failed.");
     throw new Error(error);
   } finally {
     navigator.serviceWorker.removeEventListener("message", listener);

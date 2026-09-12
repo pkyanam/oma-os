@@ -124,7 +124,7 @@ test("actual-byte cache budget keeps core and evicts optional assets; disable bl
     },
     async (request) =>
       new Response(
-        request.url.endsWith("index.html")
+        new URL(request.url).pathname === "/"
           ? "shell"
           : new Uint8Array(6 * 1024 * 1024),
       ),
@@ -202,4 +202,20 @@ test("entry count is bounded independently of byte size", async () => {
   const cache = await f.caches.open("oma-offline-count");
   assert.equal((await cache.keys()).length, 180);
   assert.ok(await cache.match("/index.html"));
+});
+
+test("core index uses canonical root URL without relaxing redirect rejection", async () => {
+  const requested = [];
+  const f = fixture(
+    { version: "canonical", allowed: ["/index.html"], core: ["/index.html"] },
+    async (request) => {
+      requested.push(request.url);
+      return new Response("shell");
+    },
+  );
+  await f.dispatch("install");
+  assert.deepEqual(requested, ["https://oma.test/"]);
+  assert.ok(
+    await (await f.caches.open("oma-offline-canonical")).match("/index.html"),
+  );
 });
